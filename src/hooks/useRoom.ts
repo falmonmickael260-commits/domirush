@@ -15,7 +15,7 @@ export function useRoom() {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [room, setRoom] = useState<RoomSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const deviceId = useRef(getDeviceId()).current;
+  const [deviceId] = useState(() => getDeviceId());
   const everConnectedRef = useRef(false);
 
   useEffect(() => {

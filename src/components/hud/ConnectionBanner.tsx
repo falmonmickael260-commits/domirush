@@ -5,18 +5,27 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { ConnectionStatus } from "@/hooks/useRoom";
 
 export function ConnectionBanner({ status }: { status: ConnectionStatus }) {
-  const [showBack, setShowBack] = useState(false);
+  const [prevStatus, setPrevStatus] = useState(status);
   const [wasDisconnected, setWasDisconnected] = useState(false);
+  const [showBack, setShowBack] = useState(false);
 
-  useEffect(() => {
+  // Derive transition state during render (no effect needed for this part):
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-state-based-on-a-prop-change
+  if (status !== prevStatus) {
+    setPrevStatus(status);
     if (status === "reconnecting") setWasDisconnected(true);
     if (status === "connected" && wasDisconnected) {
-      setShowBack(true);
       setWasDisconnected(false);
-      const t = setTimeout(() => setShowBack(false), 2200);
-      return () => clearTimeout(t);
+      setShowBack(true);
     }
-  }, [status, wasDisconnected]);
+  }
+
+  // A real effect: manage the auto-hide timer for the "back" toast.
+  useEffect(() => {
+    if (!showBack) return;
+    const t = setTimeout(() => setShowBack(false), 2200);
+    return () => clearTimeout(t);
+  }, [showBack]);
 
   const message =
     status === "reconnecting"

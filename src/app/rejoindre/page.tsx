@@ -1,20 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useRoom } from "@/hooks/useRoom";
-import { getSavedProfile, randomAvatar } from "@/lib/identity";
+import { DEFAULT_AVATARS, getSavedProfile, randomAvatar } from "@/lib/identity";
 import { AvatarPicker } from "@/components/lobby/AvatarPicker";
 
 export default function RejoindrePage() {
   const router = useRouter();
   const { joinRoom, error } = useRoom();
-  const saved = getSavedProfile();
-  const [name, setName] = useState(saved.name);
-  const [avatar, setAvatar] = useState(saved.avatar || randomAvatar());
+  // Start with SSR-safe defaults, then hydrate from localStorage after mount.
+  const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState(DEFAULT_AVATARS[0]);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Reading localStorage must wait until after the SSR-matched first paint.
+    const saved = getSavedProfile();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setName(saved.name);
+    setAvatar(saved.avatar || randomAvatar());
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

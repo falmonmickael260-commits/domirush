@@ -1,6 +1,6 @@
 "use client";
 
-import type { PlacedTile, PlayerState, Side } from "@/game-engine";
+import type { PlacedTile, Side } from "@/game-engine";
 import type { SeatPosition } from "@/lib/viewModel";
 import { PlayerSeat } from "./PlayerSeat";
 import { BoardChain } from "./BoardChain";

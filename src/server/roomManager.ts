@@ -171,7 +171,15 @@ class RoomManager {
       code: room.code,
       config: room.config,
       status: room.status,
-      players: room.players.map(({ deviceId: _d, socketId: _s, ...rest }) => rest),
+      players: room.players.map((p) => ({
+        playerId: p.playerId,
+        name: p.name,
+        avatar: p.avatar,
+        color: p.color,
+        connected: p.connected,
+        isHost: p.isHost,
+        seat: p.seat,
+      })),
       hostPlayerId: room.players.find((p) => p.isHost)?.playerId ?? "",
     };
   }
