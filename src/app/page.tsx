@@ -1,69 +1,92 @@
-import Image from "next/image";
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="relative flex min-h-dvh flex-col overflow-hidden bg-bg">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-70"
+        style={{
+          background:
+            "radial-gradient(60% 50% at 50% 0%, rgba(212,175,106,0.16), transparent), radial-gradient(80% 60% at 50% 100%, rgba(107,66,38,0.35), transparent)",
+        }}
+      />
+
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+        <motion.h1
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="wordmark text-5xl font-extrabold tracking-tight sm:text-7xl"
+        >
+          DOMIRUSH
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mt-3 text-base text-text-dim sm:text-lg"
+        >
+          Le domino. À plusieurs. En ligne.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="my-10 flex items-center justify-center gap-2"
+        >
+          {[
+            [6, 6],
+            [6, 3],
+            [3, 1],
+          ].map(([a, b], i) => (
+            <div
+              key={i}
+              className="flex h-16 w-8 flex-col items-center justify-center rounded-lg border border-gold-dim/40 bg-gradient-to-b from-ivory to-ivory-dim shadow-lg sm:h-20 sm:w-10"
+              style={{ transform: `translateY(${i % 2 === 0 ? 4 : -4}px) rotate(${(i - 1) * 4}deg)` }}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+              <span className="text-[10px] font-bold text-ink/70 sm:text-xs">{a}</span>
+              <span className="my-0.5 h-px w-4 bg-ink/20" />
+              <span className="text-[10px] font-bold text-ink/70 sm:text-xs">{b}</span>
+            </div>
+          ))}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="flex w-full max-w-xs flex-col gap-3"
+        >
+          <Link
+            href="/solo"
+            className="rounded-2xl bg-gradient-to-b from-gold-bright to-gold py-3.5 text-sm font-extrabold uppercase tracking-wide text-ink shadow-lg shadow-black/30 transition active:scale-[0.98]"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Jouer en solo
+          </Link>
+          <Link
+            href="/creer"
+            className="rounded-2xl bg-bg-elevated py-3.5 text-sm font-bold text-text shadow-md transition active:scale-[0.98]"
           >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            Créer une partie
+          </Link>
+          <Link
+            href="/rejoindre"
+            className="rounded-2xl bg-bg-elevated py-3.5 text-sm font-bold text-text shadow-md transition active:scale-[0.98]"
+          >
+            Rejoindre une partie
+          </Link>
+        </motion.div>
+
+        <p className="mt-8 text-xs text-text-faint">Joue avec ta famille et tes amis.</p>
+
+        <Link href="/regles" className="mt-4 text-xs font-medium text-text-dim underline underline-offset-4">
+          Comment jouer ?
+        </Link>
+      </div>
+    </main>
   );
 }
