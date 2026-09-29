@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { AnimatePresence } from "framer-motion";
+import { useMemo, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { PlacedTile, Side } from "@/game-engine";
+import { computeChainLayout, pickWorldTileSize } from "@/lib/boardCamera";
+import { useBoardCamera } from "@/hooks/useBoardCamera";
+import { useMeasuredSize } from "@/hooks/useMeasuredSize";
 import { Domino } from "@/components/domino/Domino";
 import { GhostSlot } from "./GhostSlot";
 
@@ -10,67 +13,81 @@ export interface BoardChainProps {
   board: PlacedTile[];
   playableSidesForSelected: Side[] | null;
   onPlayAt: (side: Side) => void;
-  tileSize?: number;
 }
 
-export function BoardChain({
-  board,
-  playableSidesForSelected,
-  onPlayAt,
-  tileSize = 34,
-}: BoardChainProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+/**
+ * Renders the domino chain on a "dynamic camera": every tile lives in a fixed
+ * world-space coordinate system (see lib/boardCamera), and a single
+ * transformed layer pans/zooms to keep the whole chain framed, centered on
+ * its true geometric center — never on the last tile played. See
+ * useBoardCamera for the interpolation itself.
+ */
+export function BoardChain({ board, playableSidesForSelected, onPlayAt }: BoardChainProps) {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const viewport = useMeasuredSize(viewportRef);
+  const worldTileSize = pickWorldTileSize(viewport.width);
 
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
-  }, [board.length]);
+  const { tiles, bounds } = useMemo(
+    () => computeChainLayout(board, worldTileSize),
+    [board, worldTileSize]
+  );
+  const { x, y, scale } = useBoardCamera(bounds, viewport);
 
+  const ghostGap = worldTileSize * 0.35;
   const showLeftGhost = board.length === 0 || playableSidesForSelected?.includes("left");
   const showRightGhost = board.length > 0 && playableSidesForSelected?.includes("right");
+  const leftGhostCx = board.length === 0 ? 0 : bounds.minX - ghostGap;
+  const rightGhostCx = bounds.maxX + ghostGap;
 
   return (
-    <div
-      ref={scrollRef}
-      className="no-scrollbar flex h-full w-full items-center gap-1 overflow-x-auto px-6"
-      style={{ maskImage: "linear-gradient(90deg, transparent, black 6%, black 94%, transparent)" }}
-    >
-      <div className="flex flex-shrink-0 items-center gap-1 mx-auto">
+    <div ref={viewportRef} data-board-viewport className="relative h-full w-full overflow-hidden">
+      <motion.div className="absolute left-1/2 top-1/2" style={{ x, y, scale }}>
         <AnimatePresence>
           {showLeftGhost && (
-            <GhostSlot key="ghost-left" label="Jouer à gauche" onClick={() => onPlayAt("left")} />
+            <div
+              key="ghost-left"
+              style={{ position: "absolute", left: leftGhostCx, top: 0, transform: "translate(-50%, -50%)" }}
+            >
+              <GhostSlot label="Jouer à gauche" onClick={() => onPlayAt("left")} />
+            </div>
           )}
         </AnimatePresence>
 
-        {board.map((placed) => {
-          const isDouble = placed.tile.a === placed.tile.b;
-          const w = isDouble ? tileSize : tileSize * 2;
-          const h = isDouble ? tileSize * 2 : tileSize;
-          return (
-            <div
-              key={placed.tile.id}
-              className="flex flex-shrink-0 items-center justify-center"
-              style={{ width: w, height: h }}
-            >
-              <Domino
-                id={placed.tile.id}
-                topValue={placed.left}
-                bottomValue={placed.right}
-                width={tileSize}
-                rotationDeg={isDouble ? 0 : -90}
-                state="placed"
-              />
-            </div>
-          );
-        })}
+        {tiles.map((t) => (
+          <div
+            key={t.id}
+            className="flex items-center justify-center"
+            style={{
+              position: "absolute",
+              left: t.cx,
+              top: t.cy,
+              width: t.width,
+              height: t.height,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            <Domino
+              id={t.id}
+              topValue={t.left}
+              bottomValue={t.right}
+              width={worldTileSize}
+              rotationDeg={t.rotationDeg}
+              state="placed"
+            />
+          </div>
+        ))}
 
         <AnimatePresence>
           {showRightGhost && (
-            <GhostSlot key="ghost-right" label="Jouer à droite" onClick={() => onPlayAt("right")} />
+            <div
+              key="ghost-right"
+              style={{ position: "absolute", left: rightGhostCx, top: 0, transform: "translate(-50%, -50%)" }}
+            >
+              <GhostSlot label="Jouer à droite" onClick={() => onPlayAt("right")} />
+            </div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </div>
   );
 }

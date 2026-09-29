@@ -62,13 +62,12 @@ export function GameTable({
           />
         ))}
 
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="h-24 w-full sm:h-32 lg:h-40">
+        <div className="absolute inset-0 flex items-center justify-center px-16 sm:px-24">
+          <div className="h-24 w-full sm:h-40 lg:h-52">
             <BoardChain
               board={board}
               playableSidesForSelected={playableSidesForSelected}
               onPlayAt={onPlayAt}
-              tileSize={40}
             />
           </div>
         </div>
