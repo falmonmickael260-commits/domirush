@@ -51,10 +51,13 @@ export default function Boutique() {
         ))}
       </div>
       <section aria-label="Aperçu du skin" className="mb-6 grid overflow-hidden rounded-3xl border border-gold/25 bg-bg-elevated sm:grid-cols-2">
-        <div className="flex min-h-44 items-center justify-center gap-2 border-8 px-5 py-5"
+        <div className="flex min-h-56 items-center justify-center gap-1 border-8 px-5 py-6 sm:min-h-64 sm:gap-3"
           style={{ background: `radial-gradient(ellipse at 50% 36%, ${board.rail}, ${board.felt} 70%)`, borderColor: board.border }} data-board-preview>
-          {[[6, 6], [6, 4], [4, 2]].map(([a, b]) => (
-            <DominoSVG key={b} a={a} b={b} skin={domino} className="h-24 w-12 rotate-[-8deg] drop-shadow-lg sm:h-28 sm:w-14" />
+          {[[6, 6], [5, 3], [4, 2]].map(([a, b], index) => (
+            <DominoSVG key={b} a={a} b={b} skin={domino} previewEffects={index === 1} className={
+              index === 1 ? "z-10 h-40 w-20 shrink-0 drop-shadow-2xl sm:h-48 sm:w-24"
+                : `h-28 w-14 shrink-0 drop-shadow-lg sm:h-32 sm:w-16 ${index === 0 ? "-rotate-12" : "rotate-12"}`
+            } />
           ))}
         </div>
         <div className="flex flex-col justify-center p-6">
@@ -81,7 +84,7 @@ export default function Boutique() {
             {isBoardSkin(id) ? (
               <span aria-hidden="true" className="h-11 w-11 shrink-0 rounded-lg border-4 shadow-inner"
                 style={{ background: BOARD_SKINS[id].felt, borderColor: BOARD_SKINS[id].border }} />
-            ) : <DominoSVG a={5} b={3} skin={id} className="h-14 w-7 shrink-0" />}
+            ) : <DominoSVG a={5} b={3} skin={id} className="h-[4.5rem] w-9 shrink-0 drop-shadow-md" />}
             <span>
               <span className="block text-sm font-bold">{isBoardSkin(id) ? BOARD_SKINS[id].name : DOMINO_SKINS[id].name}</span>
               <span className="text-xs text-text-dim">{equipped === id ? "Équipé" : shop.owned.includes(id) ? "Possédé"

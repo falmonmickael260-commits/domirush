@@ -1,8 +1,10 @@
 "use client";
 
+import { useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import type { PlacedTile, Side } from "@/game-engine";
 import { Domino } from "@/components/domino/Domino";
+import { DOMINO_ENGRAVINGS } from "@/lib/dominoEngravings";
 import { BOARD_SKINS, DOMINO_SKINS } from "@/lib/dominoSkins";
 import { useDominoShop } from "@/components/DominoSkinProvider";
 import { useMeasuredSize } from "@/hooks/useMeasuredSize";
@@ -14,8 +16,10 @@ interface BoardChainProps {
 }
 
 export function BoardChain({ board, playableSidesForSelected, onPlayAt }: BoardChainProps) {
+  const reduceMotion = useReducedMotion();
   const { shop } = useDominoShop();
   const skin = DOMINO_SKINS[shop.equipped];
+  const engraving = DOMINO_ENGRAVINGS[shop.equipped];
   const table = BOARD_SKINS[shop.equippedBoard];
   const frame = useRef<HTMLIFrameElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
@@ -37,10 +41,11 @@ export function BoardChain({ board, playableSidesForSelected, onPlayAt }: BoardC
     if (!ready) return;
     frame.current?.contentWindow?.postMessage({
       type: "domirush:board",
-      palette: JSON.stringify({ face: skin.face, edge: skin.edge, pip: skin.pip, felt: table.felt, accent: table.accent }),
-      tiles: JSON.stringify(board.map(({ left, right }) => [left, right])),
+      palette: JSON.stringify({ face: skin.face, engraving, edge: skin.edge, pip: skin.pip, felt: table.felt, accent: table.accent }),
+      tiles: JSON.stringify(board.map(({ left, right, tile }) => [left, right, tile.id])),
+      effects: reduceMotion === false && Boolean(engraving),
     }, window.location.origin);
-  }, [board, ready, skin, table]);
+  }, [board, ready, skin, table, engraving, reduceMotion]);
 
   // Keep a playable board while the WebAssembly export starts or WebGL is unavailable.
   let columns = 1;

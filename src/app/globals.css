@@ -111,3 +111,16 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+@keyframes domino-preview-reflection {
+  0%, 12% { transform: translateX(-30px) skewX(-18deg); opacity: 0; }
+  22% { opacity: 0.85; }
+  49% { transform: translateX(245px) skewX(-18deg); opacity: 0; }
+  100% { transform: translateX(245px) skewX(-18deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .domino-preview-reflection {
+    animation: domino-preview-reflection 4.5s ease-out infinite;
+  }
+}
