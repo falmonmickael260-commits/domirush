@@ -29,7 +29,7 @@ export function GameTable({
       className="relative mx-auto aspect-[4/5] max-h-full w-full max-w-lg rounded-[28px] p-3 sm:aspect-[16/9] sm:max-w-6xl sm:p-6"
       style={{
         background:
-          "radial-gradient(120% 140% at 50% 0%, var(--color-wood-light) 0%, var(--color-wood) 45%, var(--color-wood-dark) 100%)",
+          "radial-gradient(120% 140% at 50% 0%, #365b4c 0%, #1b392e 45%, #10261e 100%)",
         boxShadow:
           "inset 0 2px 6px rgba(255,255,255,0.12), inset 0 -10px 24px rgba(0,0,0,0.45), 0 20px 40px -12px rgba(0,0,0,0.6)",
       }}
@@ -55,15 +55,15 @@ export function GameTable({
           <PlayerSeat
             key={seat.player.id}
             player={seat.player}
-            position={seat.position}
+            position={seat.position === "east" ? "topRight" : seat.position === "west" ? "topLeft" : seat.position}
             tileCount={handCounts[seat.player.id] ?? 0}
             isActive={seat.player.id === activePlayerId}
             score={scores[seat.player.id] ?? 0}
           />
         ))}
 
-        <div className="absolute inset-0 flex items-center justify-center px-16 sm:px-24">
-          <div className="h-24 w-full sm:h-40 lg:h-52">
+        <div className="absolute inset-x-3 bottom-[23%] top-[26%] flex items-center justify-center sm:inset-x-6">
+          <div className="h-full w-full">
             <BoardChain
               board={board}
               playableSidesForSelected={playableSidesForSelected}

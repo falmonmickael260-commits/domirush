@@ -22,7 +22,7 @@ export function ActionBar({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 12 }}
-          className="pointer-events-none absolute inset-x-0 bottom-[104px] z-20 flex justify-center sm:bottom-[120px]"
+          className="pointer-events-none absolute inset-x-0 bottom-2 left-2 right-auto z-20 flex justify-start"
         >
           <div className="pointer-events-auto flex gap-2 rounded-full bg-bg-elevated/95 px-2 py-2 shadow-xl backdrop-blur-sm">
             {canDraw && (

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 
 export default function Home() {
@@ -10,50 +11,18 @@ export default function Home() {
         className="pointer-events-none absolute inset-0 opacity-70"
         style={{
           background:
-            "radial-gradient(60% 50% at 50% 0%, rgba(212,175,106,0.16), transparent), radial-gradient(80% 60% at 50% 100%, rgba(107,66,38,0.35), transparent)",
+            "radial-gradient(60% 50% at 50% 0%, rgba(212,175,106,0.16), transparent), radial-gradient(80% 60% at 50% 100%, rgba(27,82,62,0.45), transparent)",
         }}
       />
 
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="wordmark text-5xl font-extrabold tracking-tight sm:text-7xl"
+          className="mb-8 w-full max-w-xl overflow-hidden rounded-[2rem] border border-gold/30 shadow-2xl shadow-black/40"
         >
-          DOMIRUSH
+          <Image src="/domirush.webp" alt="Domirush" width={1200} height={750} priority className="h-auto w-full" />
         </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mt-3 text-base text-text-dim sm:text-lg"
-        >
-          Le domino. À plusieurs. En ligne.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="my-10 flex items-center justify-center gap-2"
-        >
-          {[
-            [6, 6],
-            [6, 3],
-            [3, 1],
-          ].map(([a, b], i) => (
-            <div
-              key={i}
-              className="flex h-16 w-8 flex-col items-center justify-center rounded-lg border border-gold-dim/40 bg-gradient-to-b from-ivory to-ivory-dim shadow-lg sm:h-20 sm:w-10"
-              style={{ transform: `translateY(${i % 2 === 0 ? 4 : -4}px) rotate(${(i - 1) * 4}deg)` }}
-            >
-              <span className="text-[10px] font-bold text-ink/70 sm:text-xs">{a}</span>
-              <span className="my-0.5 h-px w-4 bg-ink/20" />
-              <span className="text-[10px] font-bold text-ink/70 sm:text-xs">{b}</span>
-            </div>
-          ))}
-        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}

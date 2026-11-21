@@ -48,7 +48,7 @@ export function GameView({
   const activePlayer = vm.players.find((p) => p.id === vm.currentPlayerId) ?? null;
 
   const selectedTile = vm.myHand.find((t) => t.id === selectedTileId) ?? null;
-  const playableSidesForSelected = selectedTile
+  const playableSidesForSelected = isMyTurn && selectedTile
     ? computePlayableMoves([selectedTile], vm.board)[selectedTile.id] ?? []
     : null;
 

@@ -6,6 +6,7 @@ import type { Room } from "../types";
 import { redactGameStateFor } from "@/game-engine";
 import { logCompletedGame } from "../database";
 import { deriveShortPlayerId } from "@/lib/playerId";
+import { publishResult, verifyIdentity } from "../platform";
 
 type IO = Server<ClientToServerEvents, ServerToClientEvents>;
 type Sock = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -22,15 +23,19 @@ function broadcastGame(io: IO, room: Room) {
   }
   if (room.status === "finished" && room.game.winnerId) {
     void logCompletedGame(room);
+    publishResult(room);
   }
 }
 
 export function registerSocketHandlers(io: IO) {
   io.on("connection", (socket: Sock) => {
-    socket.on("room:create", (payload, ack) => {
+    socket.on("room:create", async (payload, ack) => {
       try {
+        const identity = await verifyIdentity(payload.platformToken);
+        if (payload.platformToken && !identity) throw new Error("Invalid platform identity");
+        if (!socket.connected) return;
         const room = roomManager.createRoom(
-          { deviceId: payload.deviceId, name: payload.name, avatar: payload.avatar },
+          { deviceId: payload.deviceId, name: identity?.username || payload.name, avatar: payload.avatar, userId: identity?.uid },
           { playerCount: payload.playerCount, targetScore: payload.targetScore }
         );
         joinSocketToRoom(socket, room.code, payload.deviceId);
@@ -42,11 +47,22 @@ export function registerSocketHandlers(io: IO) {
       }
     });
 
-    socket.on("room:join", (payload, ack) => {
+    socket.on("room:join", async (payload, ack) => {
+      const existing = roomManager.getRoom(payload.code)?.players.some(p => p.deviceId === payload.deviceId);
+      let identity: Awaited<ReturnType<typeof verifyIdentity>> = null;
+      try {
+        if (!existing) identity = await verifyIdentity(payload.platformToken);
+        if (!existing && payload.platformToken && !identity) throw new Error("Invalid platform identity");
+      } catch {
+        ack({ ok: false, error: "CONNECTION_ERROR" });
+        return;
+      }
+      if (!socket.connected) return;
       const result = roomManager.joinRoom(payload.code, {
         deviceId: payload.deviceId,
-        name: payload.name,
+        name: identity?.username || payload.name,
         avatar: payload.avatar,
+        userId: identity?.uid,
       });
       if (!result.ok) {
         ack({ ok: false, error: result.error });
@@ -65,12 +81,19 @@ export function registerSocketHandlers(io: IO) {
     });
 
     socket.on("room:leave", (payload) => {
+      if (!seated(socket, payload.code) || socket.data.deviceId !== payload.deviceId) return;
       const room = roomManager.leaveRoom(payload.code, payload.deviceId);
+      roomManager.handleDisconnect(socket.id);
+      delete socket.data.deviceId;
+      delete socket.data.code;
       socket.leave(payload.code);
       if (room) broadcastRoom(io, room);
     });
 
     socket.on("game:start", (payload) => {
+      if (!seated(socket, payload.code)?.isHost) return;
+      const room = roomManager.getRoom(payload.code);
+      if (!room?.players.every(p => p.connected)) return;
       const result = roomManager.startGame(payload.code);
       if ("error" in result) {
         socket.emit("game:error", { code: result.error, message: result.error });
@@ -104,17 +127,11 @@ export function registerSocketHandlers(io: IO) {
     });
 
     socket.on("game:continue", (payload) => {
-      const result = roomManager.applyAction(payload.code, { type: "CONTINUE" });
-      if ("error" in result) return;
-      broadcastRoom(io, result);
-      broadcastGame(io, result);
+      dispatchAction(io, socket, payload.code, { type: "CONTINUE" });
     });
 
     socket.on("game:rematch", (payload) => {
-      const result = roomManager.applyAction(payload.code, { type: "REMATCH" });
-      if ("error" in result) return;
-      broadcastRoom(io, result);
-      broadcastGame(io, result);
+      dispatchAction(io, socket, payload.code, { type: "REMATCH" });
     });
 
     socket.on("disconnect", () => {
@@ -128,13 +145,22 @@ export function registerSocketHandlers(io: IO) {
 }
 
 function joinSocketToRoom(socket: Sock, code: string, deviceId: string) {
+  if (socket.data.code && socket.data.code !== code) {
+    socket.leave(socket.data.code);
+    roomManager.handleDisconnect(socket.id);
+  }
   socket.join(code);
   socket.data.code = code;
   socket.data.deviceId = deviceId;
 }
 
 function currentPlayerId(socket: Sock): string {
-  return deriveShortPlayerId(socket.data.deviceId as string);
+  return typeof socket.data.deviceId === "string" ? deriveShortPlayerId(socket.data.deviceId) : "";
+}
+
+function seated(socket: Sock, code: string) {
+  if (socket.data.code !== code) return undefined;
+  return roomManager.getRoom(code)?.players.find(p => p.socketId === socket.id);
 }
 
 function dispatchAction(
@@ -143,13 +169,19 @@ function dispatchAction(
   code: string,
   action: Parameters<typeof roomManager.applyAction>[1]
 ) {
-  const result = roomManager.applyAction(code, action);
-  if ("error" in result) {
-    socket.emit("game:error", { code: result.error, message: result.error });
-    return;
+  if (!seated(socket, code)) return;
+  try {
+    const result = roomManager.applyAction(code, action);
+    if ("error" in result) {
+      socket.emit("game:error", { code: result.error, message: result.error });
+      return;
+    }
+    broadcastRoom(io, result);
+    broadcastGame(io, result);
+  } catch (error) {
+    const code = toErrorCode(error);
+    socket.emit("game:error", { code, message: code });
   }
-  broadcastRoom(io, result);
-  broadcastGame(io, result);
 }
 
 function toErrorCode(err: unknown): string {

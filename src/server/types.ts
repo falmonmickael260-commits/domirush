@@ -2,6 +2,7 @@ import type { GameState, PlayerCount, TargetScore } from "@/game-engine";
 
 export interface RoomPlayer {
   deviceId: string;
+  userId?: string;
   playerId: string;
   name: string;
   avatar: string;
@@ -15,6 +16,8 @@ export interface RoomPlayer {
 export type RoomStatus = "lobby" | "playing" | "finished";
 
 export interface Room {
+  instance: string;
+  matchId: string;
   code: string;
   config: {
     playerCount: PlayerCount;
@@ -32,6 +35,6 @@ export interface RoomSummary {
   code: string;
   config: Room["config"];
   status: RoomStatus;
-  players: Array<Omit<RoomPlayer, "socketId" | "deviceId">>;
+  players: Array<Omit<RoomPlayer, "socketId" | "deviceId" | "userId">>;
   hostPlayerId: string;
 }

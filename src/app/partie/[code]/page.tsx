@@ -10,7 +10,7 @@ import { ConnectionBanner } from "@/components/hud/ConnectionBanner";
 export default function PartiePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const router = useRouter();
-  const { status, leaveRoom } = useRoom();
+  const { status, leaveRoom } = useRoom(code);
   const {
     viewModel,
     selectedTileId,

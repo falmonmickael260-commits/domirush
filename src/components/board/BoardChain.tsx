@@ -1,93 +1,96 @@
 "use client";
 
-import { useMemo, useRef } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import type { PlacedTile, Side } from "@/game-engine";
-import { computeChainLayout, pickWorldTileSize } from "@/lib/boardCamera";
-import { useBoardCamera } from "@/hooks/useBoardCamera";
-import { useMeasuredSize } from "@/hooks/useMeasuredSize";
 import { Domino } from "@/components/domino/Domino";
-import { GhostSlot } from "./GhostSlot";
+import { useMeasuredSize } from "@/hooks/useMeasuredSize";
 
-export interface BoardChainProps {
+interface BoardChainProps {
   board: PlacedTile[];
   playableSidesForSelected: Side[] | null;
   onPlayAt: (side: Side) => void;
 }
 
-/**
- * Renders the domino chain on a "dynamic camera": every tile lives in a fixed
- * world-space coordinate system (see lib/boardCamera), and a single
- * transformed layer pans/zooms to keep the whole chain framed, centered on
- * its true geometric center — never on the last tile played. See
- * useBoardCamera for the interpolation itself.
- */
 export function BoardChain({ board, playableSidesForSelected, onPlayAt }: BoardChainProps) {
-  const viewportRef = useRef<HTMLDivElement | null>(null);
-  const viewport = useMeasuredSize(viewportRef);
-  const worldTileSize = pickWorldTileSize(viewport.width);
+  const frame = useRef<HTMLIFrameElement>(null);
+  const viewport = useRef<HTMLDivElement>(null);
+  const { width, height } = useMeasuredSize(viewport);
+  const [ready, setReady] = useState(false);
 
-  const { tiles, bounds } = useMemo(
-    () => computeChainLayout(board, worldTileSize),
-    [board, worldTileSize]
-  );
-  const { x, y, scale } = useBoardCamera(bounds, viewport);
+  useEffect(() => {
+    function receive(event: MessageEvent) {
+      if (event.source === frame.current?.contentWindow &&
+          event.origin === window.location.origin && event.data === "domirush:ready") {
+        setReady(true);
+      }
+    }
+    window.addEventListener("message", receive);
+    return () => window.removeEventListener("message", receive);
+  }, []);
 
-  const ghostGap = worldTileSize * 0.35;
-  const showLeftGhost = board.length === 0 || playableSidesForSelected?.includes("left");
-  const showRightGhost = board.length > 0 && playableSidesForSelected?.includes("right");
-  const leftGhostCx = board.length === 0 ? 0 : bounds.minX - ghostGap;
-  const rightGhostCx = bounds.maxX + ghostGap;
+  useEffect(() => {
+    if (!ready) return;
+    frame.current?.contentWindow?.postMessage({
+      type: "domirush:board",
+      tiles: JSON.stringify(board.map(({ left, right }) => [left, right])),
+    }, window.location.origin);
+  }, [board, ready]);
+
+  // Keep a playable board while the WebAssembly export starts or WebGL is unavailable.
+  let columns = 1;
+  let tileSize = 0;
+  for (let candidate = 1; candidate <= board.length; candidate++) {
+    const rows = Math.ceil(board.length / candidate);
+    const fit = Math.min(44, (width - 20) / (candidate * 2.14 + 0.88), (height - 18) / (rows * 1.62 - 0.62));
+    if (fit >= tileSize) {
+      columns = candidate;
+      tileSize = fit;
+    }
+  }
+
+  const left = board[0]?.left;
+  const right = board.at(-1)?.right;
 
   return (
-    <div ref={viewportRef} data-board-viewport className="relative h-full w-full overflow-hidden">
-      <motion.div className="absolute left-1/2 top-1/2" style={{ x, y, scale }}>
-        <AnimatePresence>
-          {showLeftGhost && (
-            <div
-              key="ghost-left"
-              style={{ position: "absolute", left: leftGhostCx, top: 0, transform: "translate(-50%, -50%)" }}
-            >
-              <GhostSlot label="Jouer à gauche" onClick={() => onPlayAt("left")} />
-            </div>
-          )}
-        </AnimatePresence>
-
-        {tiles.map((t) => (
-          <div
-            key={t.id}
-            className="flex items-center justify-center"
-            style={{
-              position: "absolute",
-              left: t.cx,
-              top: t.cy,
-              width: t.width,
-              height: t.height,
-              transform: "translate(-50%, -50%)",
-            }}
-          >
-            <Domino
-              id={t.id}
-              topValue={t.left}
-              bottomValue={t.right}
-              width={worldTileSize}
-              rotationDeg={t.rotationDeg}
-              state="placed"
-            />
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      <div ref={viewport} data-board-viewport className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-gold/20 bg-[#102f27]">
+        <iframe ref={frame} src="/godot/index.html" title="Plateau Domirush"
+          tabIndex={-1} aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 size-full border-0 ${ready ? "" : "invisible"}`}
+        />
+        {!ready && (
+          <div className="absolute inset-0 grid place-content-center">
+            {board.length === 0 ? <span className="text-sm text-gold">Premier domino</span> : tileSize > 0 && (
+              <div className="grid" style={{ gridTemplateColumns: `repeat(${columns}, ${tileSize * 2}px)`, gap: `${tileSize * 0.62}px ${tileSize * 0.14}px` }}>
+                {board.map((tile, index) => {
+                  const row = Math.floor(index / columns);
+                  const reverse = row % 2 === 1;
+                  return (
+                    <div key={tile.tile.id} className="grid place-items-center"
+                      style={{ gridRow: row + 1, gridColumn: reverse ? columns - index % columns : index % columns + 1, height: tileSize }}>
+                      <Domino id={tile.tile.id} topValue={reverse ? tile.right : tile.left}
+                        bottomValue={reverse ? tile.left : tile.right} rotationDeg={-90}
+                        width={tileSize} state="placed" />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        ))}
-
-        <AnimatePresence>
-          {showRightGhost && (
-            <div
-              key="ghost-right"
-              style={{ position: "absolute", left: rightGhostCx, top: 0, transform: "translate(-50%, -50%)" }}
-            >
-              <GhostSlot label="Jouer à droite" onClick={() => onPlayAt("right")} />
-            </div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+        )}
+      </div>
+      <div className="flex min-h-10 items-center justify-between gap-2 text-xs font-semibold text-gold">
+        {(["left", "right"] as const).map((side) => {
+          const allowed = playableSidesForSelected?.includes(side) && (board.length > 0 || side === "left");
+          const label = board.length === 0 ? "Poser le domino" : side === "left" ? `Jouer à gauche · ${left}` : `Jouer à droite · ${right}`;
+          return allowed ? (
+            <button key={side} type="button" onClick={() => onPlayAt(side)}
+              className="min-h-10 rounded-lg bg-gold px-3 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
+              {label}
+            </button>
+          ) : <span key={side}>{board.length > 0 && (side === "left" ? `Gauche · ${left}` : `Droite · ${right}`)}</span>;
+        })}
+      </div>
     </div>
   );
 }

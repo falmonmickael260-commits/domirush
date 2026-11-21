@@ -10,9 +10,11 @@ export interface PlayerProfile {
 
 const DEFAULT_AVATARS = ["🙂", "🦊", "🐼", "🦁", "🐨", "🐸", "🦉", "🐯", "🐵", "🐧"];
 
-export function getDeviceId(): string {
+export function getDeviceId(roomCode?: string): string {
   if (typeof window === "undefined") return "server";
   try {
+    const seat = roomCode && localStorage.getItem(`domirush:seat:${roomCode}`);
+    if (seat) return seat;
     let id = localStorage.getItem(DEVICE_ID_KEY);
     if (!id) {
       id = crypto.randomUUID();

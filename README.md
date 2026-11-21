@@ -89,3 +89,27 @@ npm test
 ```
 
 La suite couvre : génération et mélange du jeu de dominos, distribution (2/3/4 joueurs), détermination du premier joueur, validation des coups (pose, orientation, extrémités), pioche et passe, blocage de partie, scoring (fin de manche classique et manche bloquée), victoire à 50/100 points, et des parties complètes simulées IA-contre-IA pour 2, 3 et 4 joueurs vérifiant qu'aucune tuile n'est jamais dupliquée ou perdue.
+
+## Plateau Godot
+
+L’export Web de Godot 4.7.2 affiche le plateau des parties solo et multijoueurs.
+La chaîne se replie selon la place disponible. Les commandes de pose restent
+sous le plateau et le moteur TypeScript valide les coups. En l’absence de WebGL
+ou pendant le chargement, le plateau HTML permet de jouer.
+
+Pour produire l’export localement, installe Godot 4.7.2 et ses modèles d’export,
+puis lance `sh scripts/export-godot.sh` avant de démarrer le jeu. Le Dockerfile
+effectue cet export pour Railway.
+
+## Revanche Games
+
+Dans le catalogue, ouvre Domirush, crée un salon, puis choisis **Inviter un ami**.
+L’ami rejoint le salon depuis son invitation. Le serveur du jeu vérifie l’identité
+émise par Revanche Games et lui transmet les résultats des parties multijoueurs
+terminées. Une revanche possède son propre identifiant de résultat. Les parties
+solo et les joueurs invités ne créditent aucun profil. Les salons et les nouvelles
+tentatives d’envoi restent en mémoire du serveur.
+
+Le service du jeu utilise `PLATFORM_SHELL_ORIGIN` et `PLATFORM_SHARED_SECRET`.
+La plateforme utilise `GAME_CONNECTOR_SECRET_DOMINORUSH` pour la même clé dédiée
+et `NEXT_PUBLIC_GAME_URL_DOMINORUSH` pour l’adresse publique du jeu.

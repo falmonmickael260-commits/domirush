@@ -13,7 +13,7 @@ export function useMultiplayerGame(code: string) {
   const [state, setState] = useState<RedactedGameState | null>(null);
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const deviceId = useMemo(() => getDeviceId(), []);
+  const deviceId = useMemo(() => getDeviceId(code), [code]);
   const myId = useMemo(() => deriveShortPlayerId(deviceId), [deviceId]);
 
   useEffect(() => {

@@ -5,6 +5,7 @@ export interface ClientToServerEvents {
   "room:create": (
     payload: {
       deviceId: string;
+      platformToken?: string;
       name: string;
       avatar: string;
       playerCount: PlayerCount;
@@ -13,7 +14,7 @@ export interface ClientToServerEvents {
     ack: (res: { ok: true; code: string } | { ok: false; error: string }) => void
   ) => void;
   "room:join": (
-    payload: { deviceId: string; code: string; name: string; avatar: string },
+    payload: { deviceId: string; code: string; name: string; avatar: string; platformToken?: string },
     ack: (res: { ok: true } | { ok: false; error: string }) => void
   ) => void;
   "room:leave": (payload: { deviceId: string; code: string }) => void;

@@ -1,21 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSocket } from "@/lib/socketClient";
 import { getDeviceId, getSavedProfile, saveProfile, type PlayerProfile } from "@/lib/identity";
 import { friendlyMessage } from "@/lib/errorMessages";
 import type { PlayerCount, TargetScore } from "@/game-engine";
+import { deriveShortPlayerId } from "@/lib/playerId";
+import { getPlatformToken, reportPlatformRoom, tellPlatform } from "@/lib/platformClient";
 import type { RoomSummary } from "@/server/types";
 
 const LAST_ROOM_KEY = "domirush:lastRoomCode";
 
 export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
-export function useRoom() {
+export function useRoom(roomCode?: string) {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [room, setRoom] = useState<RoomSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [deviceId] = useState(() => getDeviceId());
+  const deviceId = useMemo(() => getDeviceId(roomCode), [roomCode]);
   const everConnectedRef = useRef(false);
 
   useEffect(() => {
@@ -23,12 +25,12 @@ export function useRoom() {
 
     function onConnect() {
       setStatus(everConnectedRef.current ? "connected" : "connected");
-      const lastCode = localStorage.getItem(LAST_ROOM_KEY);
+      const lastCode = roomCode;
       if (lastCode) {
         const profile = getSavedProfile();
         socket.emit(
           "room:join",
-          { deviceId, code: lastCode, name: profile.name, avatar: profile.avatar },
+          { deviceId: getDeviceId(lastCode), code: lastCode, name: profile.name, avatar: profile.avatar, platformToken: getPlatformToken() },
           () => {
             everConnectedRef.current = true;
           }
@@ -43,6 +45,11 @@ export function useRoom() {
     function onRoomUpdate(summary: RoomSummary) {
       setRoom(summary);
       localStorage.setItem(LAST_ROOM_KEY, summary.code);
+      const seat = getDeviceId(summary.code);
+      const playerId = deriveShortPlayerId(seat);
+      if (summary.status === "lobby" && summary.players.some(p => p.playerId === playerId)) {
+        reportPlatformRoom(summary.code, seat, playerId);
+      }
     }
     function onGameError(payload: { code: string; message: string }) {
       setError(friendlyMessage(payload.code, payload.message));
@@ -61,7 +68,7 @@ export function useRoom() {
       socket.off("room:update", onRoomUpdate);
       socket.off("game:error", onGameError);
     };
-  }, [deviceId]);
+  }, [roomCode]);
 
   const createRoom = useCallback(
     (profile: PlayerProfile, config: { playerCount: PlayerCount; targetScore: TargetScore }) => {
@@ -69,7 +76,7 @@ export function useRoom() {
       return new Promise<string>((resolve, reject) => {
         getSocket().emit(
           "room:create",
-          { deviceId, name: profile.name, avatar: profile.avatar, ...config },
+          { deviceId, name: profile.name, avatar: profile.avatar, platformToken: getPlatformToken(), ...config },
           (res) => {
             if (res.ok) {
               localStorage.setItem(LAST_ROOM_KEY, res.code);
@@ -91,7 +98,7 @@ export function useRoom() {
       return new Promise<void>((resolve, reject) => {
         getSocket().emit(
           "room:join",
-          { deviceId, code: code.toUpperCase(), name: profile.name, avatar: profile.avatar },
+          { deviceId: getDeviceId(code.toUpperCase()), code: code.toUpperCase(), name: profile.name, avatar: profile.avatar, platformToken: getPlatformToken() },
           (res) => {
             if (res.ok) {
               localStorage.setItem(LAST_ROOM_KEY, code.toUpperCase());
@@ -104,13 +111,14 @@ export function useRoom() {
         );
       });
     },
-    [deviceId]
+    []
   );
 
   const leaveRoom = useCallback(
     (code: string) => {
       getSocket().emit("room:leave", { deviceId, code });
       localStorage.removeItem(LAST_ROOM_KEY);
+    tellPlatform("rg:room", { session: null });
       setRoom(null);
     },
     [deviceId]

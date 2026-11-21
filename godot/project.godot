@@ -1,0 +1,9 @@
+config_version=5
+
+[application]
+config/name="Domirush"
+run/main_scene="res://table.tscn"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.027, 0.09, 0.073, 1)

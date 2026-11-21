@@ -7,13 +7,19 @@ import { useRoom } from "@/hooks/useRoom";
 import { getSavedProfile } from "@/lib/identity";
 import { deriveShortPlayerId } from "@/lib/playerId";
 import { ConnectionBanner } from "@/components/hud/ConnectionBanner";
+import { useSyncExternalStore } from "react";
+import { tellPlatform } from "@/lib/platformClient";
 import { playSound } from "@/lib/sound";
+
+const subscribeToEmbedding = () => () => {};
+const isEmbedded = () => window.parent !== window;
 
 export default function LobbyPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const router = useRouter();
-  const { room, error, status, deviceId, joinRoom, leaveRoom, startGame } = useRoom();
+  const { room, error, status, deviceId, joinRoom, leaveRoom, startGame } = useRoom(code);
   const [copied, setCopied] = useState(false);
+  const embedded = useSyncExternalStore(subscribeToEmbedding, isEmbedded, () => false);
   const myPlayerId = deriveShortPlayerId(deviceId);
 
   useEffect(() => {
@@ -36,7 +42,7 @@ export default function LobbyPage({ params }: { params: Promise<{ code: string }
   }, [room?.players.length]);
 
   const isHost = room?.hostPlayerId === myPlayerId;
-  const canStart = room ? room.players.length === room.config.playerCount : false;
+  const canStart = room ? room.players.length === room.config.playerCount && room.players.every(p => p.connected) : false;
 
   function copyCode() {
     navigator.clipboard?.writeText(code).then(() => {
@@ -78,6 +84,12 @@ export default function LobbyPage({ params }: { params: Promise<{ code: string }
         </span>
         <span className="wordmark text-4xl font-extrabold tracking-[0.2em]">{code}</span>
         <div className="mt-2 flex gap-2">
+          {embedded && (
+            <button type="button" onClick={() => tellPlatform("rg:invite-request")}
+              className="rounded-full bg-gold px-4 py-2 text-xs font-semibold text-ink">
+              Inviter un ami
+            </button>
+          )}
           <button
             type="button"
             onClick={copyCode}

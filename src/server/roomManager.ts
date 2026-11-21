@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { customAlphabet } from "nanoid";
 import { gameReducer, createInitialGameState } from "@/game-engine";
 import { deriveShortPlayerId } from "@/lib/playerId";
@@ -16,7 +17,7 @@ class RoomManager {
   private socketIndex = new Map<string, { code: string; deviceId: string }>();
 
   createRoom(
-    host: { deviceId: string; name: string; avatar: string },
+    host: { deviceId: string; name: string; avatar: string; userId?: string },
     config: { playerCount: PlayerCount; targetScore: TargetScore }
   ): Room {
     let code = generateCode();
@@ -24,6 +25,7 @@ class RoomManager {
 
     const hostPlayer: RoomPlayer = {
       deviceId: host.deviceId,
+      userId: host.userId,
       playerId: deriveShortPlayerId(host.deviceId),
       name: host.name,
       avatar: host.avatar,
@@ -35,6 +37,8 @@ class RoomManager {
     };
 
     const room: Room = {
+      instance: randomUUID(),
+      matchId: randomUUID(),
       code,
       config,
       players: [hostPlayer],
@@ -53,7 +57,7 @@ class RoomManager {
 
   joinRoom(
     code: string,
-    joiner: { deviceId: string; name: string; avatar: string }
+    joiner: { deviceId: string; name: string; avatar: string; userId?: string }
   ): { ok: true; room: Room } | { ok: false; error: string } {
     const room = this.getRoom(code);
     if (!room) return { ok: false, error: "ROOM_NOT_FOUND" };
@@ -66,10 +70,12 @@ class RoomManager {
     }
 
     if (room.status !== "lobby") return { ok: false, error: "GAME_ALREADY_STARTED" };
+    if (joiner.userId && room.players.some(p => p.userId === joiner.userId)) return { ok: false, error: "ROOM_FULL" };
     if (room.players.length >= room.config.playerCount) return { ok: false, error: "ROOM_FULL" };
 
     room.players.push({
       deviceId: joiner.deviceId,
+      userId: joiner.userId,
       playerId: deriveShortPlayerId(joiner.deviceId),
       name: joiner.name,
       avatar: joiner.avatar,
@@ -88,6 +94,7 @@ class RoomManager {
     if (!room) return undefined;
     const player = room.players.find((p) => p.deviceId === deviceId);
     if (!player) return undefined;
+    if (player.socketId) this.socketIndex.delete(player.socketId);
     player.socketId = socketId;
     player.connected = true;
     this.socketIndex.set(socketId, { code, deviceId });
@@ -112,6 +119,7 @@ class RoomManager {
   leaveRoom(code: string, deviceId: string): Room | undefined {
     const room = this.getRoom(code);
     if (!room) return undefined;
+    if (room.status !== "lobby") return room;
     room.players = room.players.filter((p) => p.deviceId !== deviceId);
     if (room.players.length === 0) {
       this.rooms.delete(room.code);
@@ -151,7 +159,12 @@ class RoomManager {
   applyAction(code: string, action: GameAction): Room | { error: string } {
     const room = this.getRoom(code);
     if (!room || !room.game) return { error: "ROOM_NOT_FOUND" };
-    room.game = gameReducer(room.game, action);
+    const previous = room.game;
+    room.game = gameReducer(previous, action);
+    if (action.type === "REMATCH" && previous.phase === "game_end" && room.game.phase !== "game_end") {
+      room.matchId = randomUUID();
+      room.status = "playing";
+    }
     if (room.game.phase === "game_end") room.status = "finished";
     this.touch(room);
     return room;
