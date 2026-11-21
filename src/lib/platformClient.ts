@@ -3,13 +3,15 @@
 const game = "dominorush";
 let platform: { origin: string; launch: string } | undefined;
 
+let token: string | undefined;
+
+export function setPlatformToken(value: string) {
+  token = value;
+}
+
 export function getPlatformToken() {
   if (typeof window === "undefined") return undefined;
-  try {
-    return new URLSearchParams(location.search).get("rg_token") || sessionStorage.getItem("domirush:platformToken") || undefined;
-  } catch {
-    return undefined;
-  }
+  return new URLSearchParams(location.search).get("rg_token") || token;
 }
 
 export function configurePlatform(origin: string, launch: string) {

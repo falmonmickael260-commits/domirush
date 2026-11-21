@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { deriveShortPlayerId } from "@/lib/playerId";
-import { configurePlatform, reportPlatformRoom, tellPlatform } from "@/lib/platformClient";
+import { configurePlatform, reportPlatformRoom, setPlatformToken, tellPlatform } from "@/lib/platformClient";
 import { getDeviceId, getSavedProfile, saveProfile } from "@/lib/identity";
 import { getSocket } from "@/lib/socketClient";
 
@@ -15,7 +15,7 @@ export function PlatformBridge({ origin }: { origin?: string }) {
     const url = new URL(location.href);
     const token = url.searchParams.get("rg_token");
     if (token) {
-      sessionStorage.setItem("domirush:platformToken", token);
+      setPlatformToken(token);
       url.searchParams.delete("rg_token");
       history.replaceState(history.state, "", url);
     }
