@@ -27,7 +27,7 @@ export async function callPlatform(purpose: "identity" | "result" | "shop", data
   const stamp = String(Math.floor(Date.now() / 1000));
   const raw = JSON.stringify(data);
   const signed = signature(`rg-dominorush-${purpose}-v1`, stamp, raw, secret).toString("hex");
-  return fetch(new URL(`/api/game/dominorush/${purpose === "result" ? "results" : "identity"}`, base), {
+  return fetch(new URL(`/api/game/dominorush/${purpose === "result" ? "results" : purpose}`, base), {
     method: "POST", body: raw, headers: { "content-type": "application/json", "x-rg-signature": `${stamp}.${signed}` },
     redirect: "error", signal: AbortSignal.timeout(5000),
   });
