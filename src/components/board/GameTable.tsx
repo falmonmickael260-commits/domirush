@@ -14,6 +14,7 @@ export interface GameTableProps {
   scores: Record<string, number>;
   board: PlacedTile[];
   placedTileEffectId?: string;
+  useSkinPlacementEffect: boolean;
   playableSidesForSelected: Side[] | null;
   onPlayAt: (side: Side) => void;
 }
@@ -25,6 +26,7 @@ export function GameTable({
   scores,
   board,
   placedTileEffectId,
+  useSkinPlacementEffect,
   playableSidesForSelected,
   onPlayAt,
 }: GameTableProps) {
@@ -74,6 +76,7 @@ export function GameTable({
             <BoardChain
               board={board}
               placedTileEffectId={placedTileEffectId}
+              useSkinPlacementEffect={useSkinPlacementEffect}
               playableSidesForSelected={playableSidesForSelected}
               onPlayAt={onPlayAt}
             />

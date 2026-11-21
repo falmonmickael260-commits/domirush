@@ -20,6 +20,8 @@ var felt_color := FELT
 var accent_color := GOLD
 var engraving: Dictionary = {}
 var highlighted_id: String = ""
+var using_skin_effect := false
+var received_snapshot := false
 var glow_time := 0.0
 const GLOW_DURATION := 0.58
 var bridge: JavaScriptObject
@@ -40,11 +42,12 @@ func _receive(args: Array) -> void:
 		return
 	var snapshot: Variant = JSON.parse_string(event.data.tiles)
 	if snapshot is Array:
-		if event.data.effects == true and snapshot.size() == tiles.size() + 1:
+		if received_snapshot and event.data.effects == true and snapshot.size() == tiles.size() + 1:
 			var previous_ids: Array = tiles.map(func(tile: Array): return tile[2] if tile.size() > 2 else "")
 			for tile: Array in snapshot:
 				if tile.size() > 2 and tile[2] == event.data.effectTileId and not previous_ids.has(tile[2]):
 					highlighted_id = str(tile[2])
+					using_skin_effect = event.data.skinEffect == true
 					glow_time = GLOW_DURATION
 					set_process(true)
 					break
@@ -52,6 +55,7 @@ func _receive(args: Array) -> void:
 			glow_time = 0.0
 			set_process(false)
 		tiles = snapshot
+		received_snapshot = true
 		if event.data.palette is String:
 			var palette: Variant = JSON.parse_string(event.data.palette)
 			if palette is Dictionary:
@@ -111,9 +115,15 @@ func _draw() -> void:
 			var previous := edge - Vector2(0, step.y)
 			draw_polyline(PackedVector2Array([previous, center - Vector2(0, step.y) + outside, center + outside, edge]), accent_color, 1.5, true)
 		var tile: Array = tiles[index]
-		draw_tile(center, unit, int(tile[1] if reverse else tile[0]), int(tile[0] if reverse else tile[1]))
-		if glow_time > 0.0 and tile.size() > 2 and str(tile[2]) == highlighted_id and not engraving.is_empty():
-			draw_placement_glow(center, unit)
+		var landing := glow_time > 0.0 and tile.size() > 2 and str(tile[2]) == highlighted_id
+		var tile_center := center
+		var tile_size := unit
+		if landing:
+			var lift := clampf(1.0 - (GLOW_DURATION - glow_time) / 0.17, 0.0, 1.0)
+			tile_center.y -= minf(unit * 0.16, 7.0) * lift
+			tile_size *= 1.0 + lift * 0.08
+			draw_placement_glow(center, unit, using_skin_effect and not engraving.is_empty())
+		draw_tile(tile_center, tile_size, int(tile[1] if reverse else tile[0]), int(tile[0] if reverse else tile[1]))
 
 func draw_tile(center: Vector2, unit: float, left: int, right: int) -> void:
 	var face := StyleBoxFlat.new()
@@ -131,18 +141,20 @@ func draw_tile(center: Vector2, unit: float, left: int, right: int) -> void:
 	draw_pips(center - Vector2(unit / 2.0, 0), left, unit)
 	draw_pips(center + Vector2(unit / 2.0, 0), right, unit)
 
-func draw_placement_glow(center: Vector2, unit: float) -> void:
+func draw_placement_glow(center: Vector2, unit: float, skin_effect: bool) -> void:
 	var intensity := glow_time / GLOW_DURATION
-	var color := Color.from_string(str(engraving.get("color")), edge_color)
-	color.a = intensity * 0.55
+	var color := Color.from_string(str(engraving.get("color")), accent_color) if skin_effect else accent_color
+	color.a = intensity * 0.68
 	var glow := StyleBoxFlat.new()
 	glow.draw_center = false
 	glow.border_color = color
 	glow.set_border_width_all(2)
 	glow.set_corner_radius_all(maxi(2, roundi(unit * 0.20)))
-	var margin := 2.0 + (1.0 - intensity) * 2.0
+	var margin := 3.0 + (1.0 - intensity) * 9.0
 	var rect := Rect2(center - Vector2(unit, unit / 2.0), Vector2(unit * 2.0, unit))
 	draw_style_box(glow, rect.grow(margin))
+	if not skin_effect:
+		return
 
 	var progress := 1.0 - intensity
 	color.a = intensity * 0.9

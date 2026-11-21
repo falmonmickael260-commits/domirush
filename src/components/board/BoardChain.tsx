@@ -12,11 +12,12 @@ import { useMeasuredSize } from "@/hooks/useMeasuredSize";
 interface BoardChainProps {
   board: PlacedTile[];
   placedTileEffectId?: string;
+  useSkinPlacementEffect: boolean;
   playableSidesForSelected: Side[] | null;
   onPlayAt: (side: Side) => void;
 }
 
-export function BoardChain({ board, placedTileEffectId, playableSidesForSelected, onPlayAt }: BoardChainProps) {
+export function BoardChain({ board, placedTileEffectId, useSkinPlacementEffect, playableSidesForSelected, onPlayAt }: BoardChainProps) {
   const reduceMotion = useReducedMotion();
   const { shop } = useDominoShop();
   const skin = DOMINO_SKINS[shop.equipped];
@@ -44,10 +45,11 @@ export function BoardChain({ board, placedTileEffectId, playableSidesForSelected
       type: "domirush:board",
       palette: JSON.stringify({ face: skin.face, engraving, edge: skin.edge, pip: skin.pip, felt: table.felt, accent: table.accent }),
       tiles: JSON.stringify(board.map(({ left, right, tile }) => [left, right, tile.id])),
-      effects: reduceMotion === false && Boolean(engraving),
+      effects: reduceMotion === false,
+      skinEffect: useSkinPlacementEffect && Boolean(engraving),
       effectTileId: placedTileEffectId ?? null,
     }, window.location.origin);
-  }, [board, ready, skin, table, engraving, reduceMotion, placedTileEffectId]);
+  }, [board, ready, skin, table, engraving, reduceMotion, placedTileEffectId, useSkinPlacementEffect]);
 
   // Keep a playable board while the WebAssembly export starts or WebGL is unavailable.
   let columns = 1;
@@ -79,7 +81,7 @@ export function BoardChain({ board, placedTileEffectId, playableSidesForSelected
                   const row = Math.floor(index / columns);
                   const reverse = row % 2 === 1;
                   return (
-                    <div key={tile.tile.id} className="grid place-items-center"
+                    <div key={tile.tile.id} className={`relative grid place-items-center ${tile.tile.id === placedTileEffectId ? "domino-landing" : ""}`}
                       style={{ gridRow: row + 1, gridColumn: reverse ? columns - index % columns : index % columns + 1, height: tileSize }}>
                       <Domino id={tile.tile.id} topValue={reverse ? tile.right : tile.left}
                         bottomValue={reverse ? tile.left : tile.right} rotationDeg={-90}
