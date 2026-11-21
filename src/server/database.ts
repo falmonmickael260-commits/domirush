@@ -45,7 +45,7 @@ export async function logCompletedGame(room: Room): Promise<void> {
   if (!p || !room.game) return;
   try {
     await ensureSchema(p);
-    const winner = room.players.find((pl) => pl.playerId === room.game?.winnerId);
+    const winner = room.game.players.find(player => player.id === room.game?.winnerId);
     await p.query(
       `INSERT INTO games_history (room_code, player_count, target_score, winner_name, scores, rounds_played)
        VALUES ($1, $2, $3, $4, $5, $6)`,

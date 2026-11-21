@@ -1,4 +1,4 @@
-import type { GameState, PlayerCount, TargetScore } from "@/game-engine";
+import type { BotLevel, GameState, PlayerCount, TargetScore } from "@/game-engine";
 
 export interface RoomPlayer {
   deviceId: string;
@@ -18,6 +18,7 @@ export type RoomStatus = "lobby" | "playing" | "finished";
 export interface Room {
   instance: string;
   matchId: string;
+  botLevel?: BotLevel;
   code: string;
   config: {
     playerCount: PlayerCount;

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSocket } from "@/lib/socketClient";
 import { getDeviceId, getSavedProfile, saveProfile, type PlayerProfile } from "@/lib/identity";
 import { friendlyMessage } from "@/lib/errorMessages";
-import type { PlayerCount, TargetScore } from "@/game-engine";
+import type { BotLevel, PlayerCount, TargetScore } from "@/game-engine";
 import { deriveShortPlayerId } from "@/lib/playerId";
 import { getPlatformToken, reportPlatformRoom, tellPlatform } from "@/lib/platformClient";
 import type { RoomSummary } from "@/server/types";
@@ -124,8 +124,8 @@ export function useRoom(roomCode?: string) {
     [deviceId]
   );
 
-  const startGame = useCallback((code: string) => {
-    getSocket().emit("game:start", { code });
+  const startGame = useCallback((code: string, botLevel?: BotLevel) => {
+    getSocket().emit("game:start", { code, botLevel });
   }, []);
 
   return { status, room, error, deviceId, createRoom, joinRoom, leaveRoom, startGame, setError };

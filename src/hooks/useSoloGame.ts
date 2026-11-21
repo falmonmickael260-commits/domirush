@@ -5,10 +5,10 @@ import {
   createInitialGameState,
   currentPlayer,
   gameReducer,
-  decideAiMove,
+  aiMoveAction,
   aiThinkingDelayMs,
 } from "@/game-engine";
-import type { GameState, PlayerState, Side, TargetScore } from "@/game-engine";
+import type { BotLevel, GameState, PlayerState, Side, TargetScore } from "@/game-engine";
 import { playSound } from "@/lib/sound";
 import { viewModelFromGameState } from "@/lib/viewModel";
 import { friendlyMessage } from "@/lib/errorMessages";
@@ -18,6 +18,7 @@ export interface SoloGameOptions {
   playerCount: 2 | 3 | 4;
   targetScore: TargetScore;
   humanName: string;
+  botLevel: BotLevel;
 }
 
 const AI_NAMES = ["Léa", "Noah", "Chloé", "Hugo", "Emma", "Louis"];
@@ -125,21 +126,10 @@ export function useSoloGame(options: SoloGameOptions) {
         const player = currentPlayer(prev);
         if (player.kind !== "ai" || player.id !== active.id) return prev;
         try {
-          const decision = decideAiMove(prev, player.id);
-          if (decision.action === "play") {
-            const next = gameReducer(prev, {
-              type: "PLAY_TILE",
-              playerId: player.id,
-              tileId: decision.tileId!,
-              side: decision.side!,
-            });
-            playSound("place");
-            return next;
-          }
-          if (decision.action === "draw") {
-            return gameReducer(prev, { type: "DRAW_TILE", playerId: player.id });
-          }
-          return gameReducer(prev, { type: "PASS", playerId: player.id });
+          const action = aiMoveAction(prev, player.id, options.botLevel);
+          const next = gameReducer(prev, action);
+          if (action.type === "PLAY_TILE") playSound("place");
+          return next;
         } catch {
           return prev;
         }
@@ -149,8 +139,7 @@ export function useSoloGame(options: SoloGameOptions) {
     return () => {
       if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.sequence, state.phase]);
+  }, [state, options.botLevel]);
 
   // Play a subtle cue whenever the turn changes to the human.
   const lastTurnPlayerRef = useRef<string | null>(null);

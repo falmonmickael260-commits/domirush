@@ -9,6 +9,8 @@ import { deriveShortPlayerId } from "@/lib/playerId";
 import { ConnectionBanner } from "@/components/hud/ConnectionBanner";
 import { useSyncExternalStore } from "react";
 import { tellPlatform } from "@/lib/platformClient";
+import { BotLevelPicker } from "@/components/BotLevelPicker";
+import type { BotLevel } from "@/game-engine";
 import { playSound } from "@/lib/sound";
 
 const subscribeToEmbedding = () => () => {};
@@ -18,6 +20,8 @@ export default function LobbyPage({ params }: { params: Promise<{ code: string }
   const { code } = use(params);
   const router = useRouter();
   const { room, error, status, deviceId, joinRoom, leaveRoom, startGame } = useRoom(code);
+  const [fillWithBots, setFillWithBots] = useState(false);
+  const [botLevel, setBotLevel] = useState<BotLevel>("medium");
   const [copied, setCopied] = useState(false);
   const embedded = useSyncExternalStore(subscribeToEmbedding, isEmbedded, () => false);
   const myPlayerId = deriveShortPlayerId(deviceId);
@@ -42,7 +46,8 @@ export default function LobbyPage({ params }: { params: Promise<{ code: string }
   }, [room?.players.length]);
 
   const isHost = room?.hostPlayerId === myPlayerId;
-  const canStart = room ? room.players.length === room.config.playerCount && room.players.every(p => p.connected) : false;
+  const freeSeats = room ? room.config.playerCount - room.players.length : 0;
+  const canStart = Boolean(room?.players.every(p => p.connected) && (freeSeats === 0 || fillWithBots));
 
   function copyCode() {
     navigator.clipboard?.writeText(code).then(() => {
@@ -149,11 +154,22 @@ export default function LobbyPage({ params }: { params: Promise<{ code: string }
 
       {error && <p className="mb-4 text-center text-xs text-danger">{error}</p>}
 
+      {isHost && freeSeats > 0 && (
+        <div className="mb-4 w-full max-w-sm space-y-3 rounded-2xl bg-bg-elevated p-4">
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input type="checkbox" className="size-4 accent-gold" checked={fillWithBots}
+              onChange={event => setFillWithBots(event.target.checked)} />
+            Compléter les places libres avec des bots
+          </label>
+          {fillWithBots && <BotLevelPicker value={botLevel} onChange={setBotLevel} />}
+        </div>
+      )}
+
       {isHost ? (
         <motion.button
           whileTap={{ scale: 0.97 }}
           disabled={!canStart}
-          onClick={() => startGame(code)}
+          onClick={() => startGame(code, fillWithBots ? botLevel : undefined)}
           className="w-full max-w-sm rounded-2xl bg-gradient-to-b from-gold-bright to-gold py-3.5 text-sm font-extrabold uppercase tracking-wide text-ink shadow-lg shadow-black/30 disabled:opacity-40"
         >
           Démarrer la partie

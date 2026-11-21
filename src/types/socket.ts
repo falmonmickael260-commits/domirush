@@ -1,4 +1,4 @@
-import type { PlayerCount, RedactedGameState, Side, TargetScore } from "@/game-engine";
+import type { BotLevel, PlayerCount, RedactedGameState, Side, TargetScore } from "@/game-engine";
 import type { RoomSummary } from "@/server/types";
 
 export interface ClientToServerEvents {
@@ -18,7 +18,7 @@ export interface ClientToServerEvents {
     ack: (res: { ok: true } | { ok: false; error: string }) => void
   ) => void;
   "room:leave": (payload: { deviceId: string; code: string }) => void;
-  "game:start": (payload: { code: string }) => void;
+  "game:start": (payload: { code: string; botLevel?: BotLevel }) => void;
   "game:play_tile": (payload: { code: string; tileId: string; side: Side }) => void;
   "game:draw": (payload: { code: string }) => void;
   "game:pass": (payload: { code: string }) => void;

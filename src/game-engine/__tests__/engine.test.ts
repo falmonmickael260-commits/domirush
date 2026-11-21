@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialGameState, currentPlayer, gameReducer } from "../engine";
-import { decideAiMove } from "../ai";
+import { aiMoveAction } from "../ai";
 import { createDeck, dealHands, handPipTotal, shuffleDeck } from "../deck";
 import type { GameState, PlayerState, Tile } from "../types";
 import { GameError } from "../types";
@@ -232,7 +232,7 @@ describe("CONTINUE and REMATCH", () => {
 
 describe("full game simulation (AI vs AI)", () => {
   for (const playerCount of [2, 3, 4] as const) {
-    it(`plays a complete ${playerCount}-player game to a winner without violating invariants`, () => {
+    it.each(["easy", "medium", "hard"] as const)(`plays %s AI in a complete ${playerCount}-player game to a winner without violating invariants`, (level) => {
       const players = makePlayers(playerCount);
       let state = createInitialGameState(`sim-${playerCount}`, players, {
         playerCount,
@@ -256,19 +256,7 @@ describe("full game simulation (AI vs AI)", () => {
         expect(totalTilesBefore).toBe(28);
 
         const player = currentPlayer(state);
-        const decision = decideAiMove(state, player.id);
-        if (decision.action === "play") {
-          state = gameReducer(state, {
-            type: "PLAY_TILE",
-            playerId: player.id,
-            tileId: decision.tileId!,
-            side: decision.side!,
-          });
-        } else if (decision.action === "draw") {
-          state = gameReducer(state, { type: "DRAW_TILE", playerId: player.id });
-        } else {
-          state = gameReducer(state, { type: "PASS", playerId: player.id });
-        }
+        state = gameReducer(state, aiMoveAction(state, player.id, level));
       }
 
       expect(state.phase).toBe("game_end");

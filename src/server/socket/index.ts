@@ -1,5 +1,5 @@
 import type { Server, Socket } from "socket.io";
-import { GameError } from "@/game-engine";
+import { aiMoveAction, aiThinkingDelayMs, BOT_LEVELS, currentPlayer, GameError } from "@/game-engine";
 import type { ClientToServerEvents, ServerToClientEvents } from "@/types/socket";
 import { roomManager } from "../roomManager";
 import type { Room } from "../types";
@@ -15,6 +15,8 @@ function broadcastRoom(io: IO, room: Room) {
   io.to(room.code).emit("room:update", roomManager.toSummary(room));
 }
 
+const botTurns = new WeakSet<NonNullable<Room["game"]>>();
+
 function broadcastGame(io: IO, room: Room) {
   if (!room.game) return;
   for (const player of room.players) {
@@ -23,8 +25,20 @@ function broadcastGame(io: IO, room: Room) {
   }
   if (room.status === "finished" && room.game.winnerId) {
     void logCompletedGame(room);
-    publishResult(room);
+    if (room.players.length >= 2) publishResult(room);
   }
+
+  const snapshot = room.game;
+  const level = room.botLevel;
+  if (!level || snapshot.phase !== "playing" || botTurns.has(snapshot)) return;
+  const player = currentPlayer(snapshot);
+  if (player.kind !== "ai") return;
+  botTurns.add(snapshot);
+  setTimeout(() => {
+    if (roomManager.getRoom(room.code) !== room || room.game !== snapshot) return;
+    const result = roomManager.applyAction(room.code, aiMoveAction(snapshot, player.id, level));
+    if (!("error" in result)) broadcastGame(io, result);
+  }, aiThinkingDelayMs()).unref();
 }
 
 export function registerSocketHandlers(io: IO) {
@@ -94,7 +108,8 @@ export function registerSocketHandlers(io: IO) {
       if (!seated(socket, payload.code)?.isHost) return;
       const room = roomManager.getRoom(payload.code);
       if (!room?.players.every(p => p.connected)) return;
-      const result = roomManager.startGame(payload.code);
+      if (payload.botLevel !== undefined && !Object.hasOwn(BOT_LEVELS, payload.botLevel)) return;
+      const result = roomManager.startGame(payload.code, payload.botLevel);
       if ("error" in result) {
         socket.emit("game:error", { code: result.error, message: result.error });
         return;

@@ -91,6 +91,17 @@ describe("roomManager.startGame", () => {
     expect("error" in result).toBe(true);
   });
 
+  it("fills only the empty seats with bots when the host chooses a level", () => {
+    const room = roomManager.createRoom(host(), { playerCount: 4, targetScore: 50 });
+    const friend = { deviceId: crypto.randomUUID(), name: "Sarah", avatar: "🦊" };
+    roomManager.joinRoom(room.code, friend);
+    expect(roomManager.startGame(room.code, "hard")).toBe(room);
+    expect(room.botLevel).toBe("hard");
+    expect(room.players).toHaveLength(2);
+    expect(room.game?.players.map(player => player.kind)).toEqual(["human", "human", "ai", "ai"]);
+    expect(roomManager.joinRoom(room.code, friend).ok).toBe(true);
+  });
+
   it("deals a game once the room is full and flips status to playing", () => {
     const h = host();
     const room = roomManager.createRoom(h, { playerCount: 2, targetScore: 50 });

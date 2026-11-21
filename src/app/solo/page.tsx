@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useSoloGame } from "@/hooks/useSoloGame";
 import { GameView } from "@/components/GameView";
-import type { TargetScore } from "@/game-engine";
+import { BotLevelPicker } from "@/components/BotLevelPicker";
+import type { BotLevel, TargetScore } from "@/game-engine";
 
 interface SoloConfig {
   playerCount: 2 | 3 | 4;
   targetScore: TargetScore;
+  botLevel: BotLevel;
 }
 
 function SoloSetup({ onStart }: { onStart: (config: SoloConfig) => void }) {
   const [playerCount, setPlayerCount] = useState<2 | 3 | 4>(4);
   const [targetScore, setTargetScore] = useState<TargetScore>(100);
+  const [botLevel, setBotLevel] = useState<BotLevel>("medium");
   const router = useRouter();
 
   return (
@@ -71,9 +74,11 @@ function SoloSetup({ onStart }: { onStart: (config: SoloConfig) => void }) {
           ))}
         </div>
 
+        <div className="mb-6"><BotLevelPicker value={botLevel} onChange={setBotLevel} /></div>
+
         <motion.button
           whileTap={{ scale: 0.97 }}
-          onClick={() => onStart({ playerCount, targetScore })}
+          onClick={() => onStart({ playerCount, targetScore, botLevel })}
           className="w-full rounded-2xl bg-gradient-to-b from-gold-bright to-gold py-3.5 text-sm font-extrabold uppercase tracking-wide text-ink shadow-lg shadow-black/30"
         >
           Jouer en solo

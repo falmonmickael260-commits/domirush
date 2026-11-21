@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { customAlphabet } from "nanoid";
 import { gameReducer, createInitialGameState } from "@/game-engine";
 import { deriveShortPlayerId } from "@/lib/playerId";
-import type { GameAction, PlayerCount, PlayerState, TargetScore } from "@/game-engine";
+import type { BotLevel, GameAction, PlayerCount, PlayerState, TargetScore } from "@/game-engine";
 import type { Room, RoomPlayer, RoomSummary } from "./types";
 
 // Excludes visually ambiguous characters (0/O, 1/I) so codes are easy to read aloud and type.
@@ -130,24 +130,33 @@ class RoomManager {
     return room;
   }
 
-  canStart(room: Room): boolean {
-    return room.status === "lobby" && room.players.length === room.config.playerCount;
+  canStart(room: Room, botLevel?: BotLevel): boolean {
+    return room.status === "lobby" && (room.players.length === room.config.playerCount || Boolean(botLevel));
   }
 
-  startGame(code: string): Room | { error: string } {
+  startGame(code: string, botLevel?: BotLevel): Room | { error: string } {
     const room = this.getRoom(code);
     if (!room) return { error: "ROOM_NOT_FOUND" };
-    if (!this.canStart(room)) return { error: "NOT_READY" };
+    if (!this.canStart(room, botLevel)) return { error: "NOT_READY" };
 
-    const gamePlayers: PlayerState[] = room.players.map((p) => ({
+    const gamePlayers: PlayerState[] = room.players.map((p, seat) => ({
       id: p.playerId,
       name: p.name,
       avatar: p.avatar,
-      color: p.color,
+      color: SEAT_COLORS[seat],
       kind: "human",
       connected: p.connected,
-      seat: p.seat,
+      seat,
     }));
+
+    room.botLevel = gamePlayers.length < room.config.playerCount ? botLevel : undefined;
+    while (gamePlayers.length < room.config.playerCount) {
+      const seat = gamePlayers.length;
+      gamePlayers.push({
+        id: `bot-${seat}`, name: `Bot ${seat + 1 - room.players.length}`, avatar: "🤖",
+        color: SEAT_COLORS[seat], kind: "ai", connected: true, seat,
+      });
+    }
 
     const initial = createInitialGameState(code, gamePlayers, room.config);
     room.game = gameReducer(initial, { type: "START_GAME" });
@@ -175,6 +184,7 @@ class RoomManager {
     if (!room) return undefined;
     room.status = "lobby";
     room.game = null;
+    room.botLevel = undefined;
     this.touch(room);
     return room;
   }
