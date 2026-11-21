@@ -80,8 +80,7 @@ export function GameView({
             handCounts={vm.handCounts}
             scores={vm.scores}
             board={vm.board}
-            placedTileEffectId={vm.lastMove?.type === "play" ? vm.lastMove.tileId : undefined}
-            useSkinPlacementEffect={vm.lastMove?.playerId === vm.myId}
+            placedTileEffectId={vm.lastMove?.type === "play" && vm.lastMove.playerId === vm.myId ? vm.lastMove.tileId : undefined}
             playableSidesForSelected={playableSidesForSelected}
             onPlayAt={handlePlayAt}
           />

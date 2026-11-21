@@ -12,16 +12,18 @@ import { useMeasuredSize } from "@/hooks/useMeasuredSize";
 interface BoardChainProps {
   board: PlacedTile[];
   placedTileEffectId?: string;
-  useSkinPlacementEffect: boolean;
   playableSidesForSelected: Side[] | null;
   onPlayAt: (side: Side) => void;
 }
 
-export function BoardChain({ board, placedTileEffectId, useSkinPlacementEffect, playableSidesForSelected, onPlayAt }: BoardChainProps) {
+export function BoardChain({ board, placedTileEffectId, playableSidesForSelected, onPlayAt }: BoardChainProps) {
   const reduceMotion = useReducedMotion();
   const { shop } = useDominoShop();
   const skin = DOMINO_SKINS[shop.equipped];
   const engraving = DOMINO_ENGRAVINGS[shop.equipped];
+  const effectTileId = reduceMotion === false && engraving && shop.owned.includes(shop.equipped)
+    ? placedTileEffectId
+    : undefined;
   const table = BOARD_SKINS[shop.equippedBoard];
   const frame = useRef<HTMLIFrameElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
@@ -45,11 +47,10 @@ export function BoardChain({ board, placedTileEffectId, useSkinPlacementEffect, 
       type: "domirush:board",
       palette: JSON.stringify({ face: skin.face, engraving, edge: skin.edge, pip: skin.pip, felt: table.felt, accent: table.accent }),
       tiles: JSON.stringify(board.map(({ left, right, tile }) => [left, right, tile.id])),
-      effects: reduceMotion === false,
-      skinEffect: useSkinPlacementEffect && Boolean(engraving),
-      effectTileId: placedTileEffectId ?? null,
+      effects: Boolean(effectTileId),
+      effectTileId: effectTileId ?? null,
     }, window.location.origin);
-  }, [board, ready, skin, table, engraving, reduceMotion, placedTileEffectId, useSkinPlacementEffect]);
+  }, [board, ready, skin, table, engraving, effectTileId]);
 
   // Keep a playable board while the WebAssembly export starts or WebGL is unavailable.
   let columns = 1;
@@ -81,7 +82,7 @@ export function BoardChain({ board, placedTileEffectId, useSkinPlacementEffect, 
                   const row = Math.floor(index / columns);
                   const reverse = row % 2 === 1;
                   return (
-                    <div key={tile.tile.id} className={`relative grid place-items-center ${tile.tile.id === placedTileEffectId ? "domino-landing" : ""}`}
+                    <div key={tile.tile.id} className={`relative grid place-items-center ${tile.tile.id === effectTileId ? "domino-landing" : ""}`}
                       style={{ gridRow: row + 1, gridColumn: reverse ? columns - index % columns : index % columns + 1, height: tileSize }}>
                       <Domino id={tile.tile.id} topValue={reverse ? tile.right : tile.left}
                         bottomValue={reverse ? tile.left : tile.right} rotationDeg={-90}

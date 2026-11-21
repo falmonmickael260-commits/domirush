@@ -42,8 +42,8 @@ export function Domino({
   return (
     <motion.button
       type="button"
-      layoutId={id}
-      layout
+      layoutId={state === "placed" ? undefined : id}
+      layout={state !== "placed"}
       disabled={!interactive || isUnplayable}
       onClick={onClick}
       aria-label={ariaLabel ?? `Domino ${topValue}-${bottomValue}`}
@@ -54,7 +54,7 @@ export function Domino({
         interactive && "focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
       )}
       style={{ width, height, touchAction: "manipulation" }}
-      initial={{ opacity: 0, scale: 0.6 }}
+      initial={state === "placed" ? false : { opacity: 0, scale: 0.6 }}
       animate={{
         opacity: isUnplayable ? 0.45 : 1,
         scale: isSelected ? 1 : 1,
