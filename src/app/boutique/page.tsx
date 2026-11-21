@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { BoardIllustration } from "@/components/board/BoardIllustration";
+import { PlacementBurst } from "@/components/domino/PlacementBurst";
+import { DOMINO_ENGRAVINGS } from "@/lib/dominoEngravings";
 import { DominoSVG } from "@/components/domino/DominoSVG";
 import { useDominoShop } from "@/components/DominoSkinProvider";
 import { BOARD_SKINS, DOMINO_SKINS, isBoardSkin, type SkinId } from "@/lib/dominoSkins";
@@ -10,14 +13,17 @@ export default function Boutique() {
   const { shop, status, change } = useDominoShop();
   const [category, setCategory] = useState<"domino" | "board">("domino");
   const [preview, setPreview] = useState<SkinId | null>(null);
+  const [effectPreview, setEffectPreview] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const equipped = category === "board" ? shop.equippedBoard : shop.equipped;
   const selected = preview ?? equipped;
   const items = category === "board" ? BOARD_SKINS : DOMINO_SKINS;
   const skin = isBoardSkin(selected) ? BOARD_SKINS[selected] : DOMINO_SKINS[selected];
-  const board = BOARD_SKINS[isBoardSkin(selected) ? selected : shop.equippedBoard];
+  const boardId = isBoardSkin(selected) ? selected : shop.equippedBoard;
+  const board = BOARD_SKINS[boardId];
   const domino = isBoardSkin(selected) ? shop.equipped : selected;
+  const engraving = DOMINO_ENGRAVINGS[domino];
   const owned = shop.owned.includes(selected);
   const price = shop.prices[selected];
 
@@ -45,24 +51,34 @@ export default function Boutique() {
         {(["domino", "board"] as const).map(option => (
           <button key={option} type="button" aria-pressed={category === option}
             className={`rounded-xl px-4 py-2 text-sm font-bold ${category === option ? "bg-gold text-ink" : "bg-bg-panel text-text"}`}
-            onClick={() => { setCategory(option); setPreview(null); setError(""); }}>
+            onClick={() => { setCategory(option); setPreview(null); setEffectPreview(0); setError(""); }}>
             {option === "domino" ? "Dominos" : "Plateaux"}
           </button>
         ))}
       </div>
       <section aria-label="Aperçu du skin" className="mb-6 grid overflow-hidden rounded-3xl border border-gold/25 bg-bg-elevated sm:grid-cols-2">
-        <div className="flex min-h-56 items-center justify-center gap-1 border-8 px-5 py-6 sm:min-h-64 sm:gap-3"
+        <div className="relative isolate flex min-h-56 items-center justify-center gap-1 overflow-hidden border-8 px-5 py-6 sm:min-h-64 sm:gap-3"
           style={{ background: `radial-gradient(ellipse at 50% 36%, ${board.rail}, ${board.felt} 70%)`, borderColor: board.border }} data-board-preview>
+          <BoardIllustration skin={boardId} className="pointer-events-none absolute inset-0 -z-10 m-auto h-full max-w-full opacity-50" />
           {[[6, 6], [5, 3], [4, 2]].map(([a, b], index) => (
-            <DominoSVG key={b} a={a} b={b} skin={domino} previewEffects={index === 1} className={
-              index === 1 ? "z-10 h-40 w-20 shrink-0 drop-shadow-2xl sm:h-48 sm:w-24"
-                : `h-28 w-14 shrink-0 drop-shadow-lg sm:h-32 sm:w-16 ${index === 0 ? "-rotate-12" : "rotate-12"}`
-            } />
+            <div key={b} className="relative">
+              <DominoSVG key={index === 1 ? `tile-${effectPreview}` : "tile"} a={a} b={b} skin={domino} previewEffects={index === 1} className={
+                index === 1 ? `h-40 w-20 shrink-0 drop-shadow-2xl sm:h-48 sm:w-24 ${effectPreview ? "domino-landing" : ""}`
+                  : `h-28 w-14 shrink-0 drop-shadow-lg sm:h-32 sm:w-16 ${index === 0 ? "-rotate-12" : "rotate-12"}`
+              } />
+              {index === 1 && effectPreview > 0 && engraving && <PlacementBurst key={`burst-${effectPreview}`} engraving={engraving} />}
+            </div>
           ))}
         </div>
         <div className="flex flex-col justify-center p-6">
           <h2 className="text-2xl font-bold">{skin.name}</h2>
           <p className="mt-1 text-sm text-text-dim">{skin.description}</p>
+          {engraving && (
+            <button type="button" onClick={() => setEffectPreview(value => value + 1)}
+              className="mt-3 self-start rounded-md border border-gold/40 px-3 py-1.5 text-sm text-gold">
+              Essayer l’effet de pose
+            </button>
+          )}
           <div className="mt-4 min-h-10">
             {typeof price === "number" && !owned && shop.balance !== null && shop.balance < price && (
               <p className="mb-2 text-sm text-text-dim">Solde insuffisant</p>
@@ -79,11 +95,13 @@ export default function Boutique() {
 
       <section aria-label={category === "domino" ? "Skins de dominos" : "Skins de plateaux"} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {(Object.keys(items) as SkinId[]).map(id => (
-          <button key={id} type="button" aria-pressed={selected === id} onClick={() => { setPreview(id); setError(""); }}
+          <button key={id} type="button" aria-pressed={selected === id} onClick={() => { setPreview(id); setEffectPreview(0); setError(""); }}
             className={`flex min-h-28 items-center gap-3 rounded-xl border p-3 text-left ${selected === id ? "border-gold bg-bg-panel" : "border-white/10 bg-bg-elevated"}`}>
             {isBoardSkin(id) ? (
               <span aria-hidden="true" className="h-11 w-11 shrink-0 rounded-lg border-4 shadow-inner"
-                style={{ background: BOARD_SKINS[id].felt, borderColor: BOARD_SKINS[id].border }} />
+                style={{ background: BOARD_SKINS[id].felt, borderColor: BOARD_SKINS[id].border }}>
+                <BoardIllustration skin={id} className="size-full" />
+              </span>
             ) : <DominoSVG a={5} b={3} skin={id} className="h-[4.5rem] w-9 shrink-0 drop-shadow-md" />}
             <span>
               <span className="block text-sm font-bold">{isBoardSkin(id) ? BOARD_SKINS[id].name : DOMINO_SKINS[id].name}</span>

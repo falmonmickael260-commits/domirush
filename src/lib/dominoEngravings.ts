@@ -1,11 +1,12 @@
 import type { DominoSkin } from "./dominoSkins";
+import { DRAWINGS, type Stroke } from "./dominoIllustrations";
 
 // Engravings use a 100 × 100 square, mirrored onto the other half.
 // The game board and the shop draw the same strokes beneath the pips.
-type Stroke = readonly (readonly [number, number])[];
-type Engraving = { color: string; effect: "sparks" | "crystals" | "orbit" | "wave"; strokes: readonly Stroke[] };
+export type LandingEffect = "sparks" | "crystals" | "orbit" | "wave" | "flame" | "bolt" | "petals" | "stars";
+export type Engraving = { color: string; burstColor?: string; effect: LandingEffect; strokes: readonly Stroke[] };
 
-export const DOMINO_ENGRAVINGS: Partial<Record<DominoSkin, Engraving>> = {
+export const DOMINO_ENGRAVINGS: Record<Exclude<DominoSkin, "classic">, Engraving> & { classic?: never } = {
   obsidian: {
     color: "#f5bc58",
     effect: "sparks",
@@ -79,4 +80,14 @@ export const DOMINO_ENGRAVINGS: Partial<Record<DominoSkin, Engraving>> = {
       [[9, 78], [17, 84], [24, 85], [35, 92], [46, 94]], [[91, 70], [83, 79], [67, 85], [59, 93]],
     ],
   },
+  dragon: { color: "#ffbf62", effect: "flame", strokes: DRAWINGS.dragon },
+  thunder: { color: "#9deaff", effect: "bolt", strokes: DRAWINGS.thunder },
+  lotus: { color: "#adffdd", effect: "petals", strokes: DRAWINGS.lotus },
+  lunar: { color: "#d3c7ff", effect: "stars", strokes: DRAWINGS.lunar },
+  shark: { color: "#93ebff", effect: "wave", strokes: DRAWINGS.shark },
+  scarab: { color: "#ffe17c", effect: "sparks", strokes: DRAWINGS.scarab },
+  sakura: { color: "#ad386d", burstColor: "#ff9dcb", effect: "petals", strokes: DRAWINGS.sakura },
+  wolf: { color: "#345781", burstColor: "#a5e0ff", effect: "crystals", strokes: DRAWINGS.wolf },
+  phoenix: { color: "#ffca69", effect: "flame", strokes: DRAWINGS.phoenix },
+  cobra: { color: "#b3ff6a", effect: "orbit", strokes: DRAWINGS.cobra },
 };

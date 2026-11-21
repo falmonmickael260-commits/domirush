@@ -126,27 +126,53 @@ body {
 }
 
 @keyframes domino-landing {
-  from { transform: translateY(-5px) scale(1.08); }
-  to { transform: translateY(0) scale(1); }
+  0% { transform: translateY(-22%) scale(1.16); }
+  62% { transform: translateY(0) scale(0.96); }
+  100% { transform: translateY(0) scale(1); }
 }
 
 @keyframes domino-landing-ripple {
-  from { transform: scale(1); opacity: 0.7; }
-  to { transform: scale(1.2, 1.4); opacity: 0; }
+  from { transform: scale(0.48); opacity: 0.9; }
+  to { transform: scale(1.45); opacity: 0; }
+}
+
+@keyframes domino-landing-particle {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y))) rotate(var(--burst-angle)); opacity: 0; }
+}
+
+.placement-burst {
+  display: none;
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+  inset: 0;
+  color: var(--burst-color);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .domino-landing {
-    animation: domino-landing 170ms ease-out;
-  }
-
-  .domino-landing::after {
+  .domino-landing { animation: domino-landing 230ms cubic-bezier(.2,.8,.35,1); }
+  .placement-burst { display: block; }
+  .placement-burst::before, .placement-burst::after {
     content: "";
     position: absolute;
-    inset: -2px;
-    border: 2px solid var(--color-gold);
-    border-radius: 7px;
-    pointer-events: none;
-    animation: domino-landing-ripple 500ms ease-out both;
+    inset: 6%;
+    border: 2px solid currentColor;
+    border-radius: 40%;
+    box-shadow: 0 0 14px currentColor, inset 0 0 9px currentColor;
+    opacity: 0;
+    animation: domino-landing-ripple 630ms 90ms ease-out both;
+  }
+  .placement-burst::after { animation-delay: 200ms; }
+  .placement-particle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 13px;
+    height: 13px;
+    opacity: 0;
+    filter: drop-shadow(0 0 3px currentColor);
+    animation: domino-landing-particle 650ms calc(120ms + var(--burst-delay)) ease-out both;
   }
 }

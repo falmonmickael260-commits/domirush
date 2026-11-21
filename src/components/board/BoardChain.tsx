@@ -3,6 +3,9 @@
 import { useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import type { PlacedTile, Side } from "@/game-engine";
+import { BoardIllustration } from "./BoardIllustration";
+import { PlacementBurst } from "@/components/domino/PlacementBurst";
+import { BOARD_ILLUSTRATIONS } from "@/lib/dominoIllustrations";
 import { Domino } from "@/components/domino/Domino";
 import { DOMINO_ENGRAVINGS } from "@/lib/dominoEngravings";
 import { BOARD_SKINS, DOMINO_SKINS } from "@/lib/dominoSkins";
@@ -25,6 +28,7 @@ export function BoardChain({ board, placedTileEffectId, playableSidesForSelected
     ? placedTileEffectId
     : undefined;
   const table = BOARD_SKINS[shop.equippedBoard];
+  const illustration = BOARD_ILLUSTRATIONS[shop.equippedBoard];
   const frame = useRef<HTMLIFrameElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const { width, height } = useMeasuredSize(viewport);
@@ -45,12 +49,12 @@ export function BoardChain({ board, placedTileEffectId, playableSidesForSelected
     if (!ready) return;
     frame.current?.contentWindow?.postMessage({
       type: "domirush:board",
-      palette: JSON.stringify({ face: skin.face, engraving, edge: skin.edge, pip: skin.pip, felt: table.felt, accent: table.accent }),
+      palette: JSON.stringify({ face: skin.face, engraving, illustration, edge: skin.edge, pip: skin.pip, felt: table.felt, accent: table.accent }),
       tiles: JSON.stringify(board.map(({ left, right, tile }) => [left, right, tile.id])),
       effects: Boolean(effectTileId),
       effectTileId: effectTileId ?? null,
     }, window.location.origin);
-  }, [board, ready, skin, table, engraving, effectTileId]);
+  }, [board, ready, skin, table, engraving, illustration, effectTileId]);
 
   // Keep a playable board while the WebAssembly export starts or WebGL is unavailable.
   let columns = 1;
@@ -76,6 +80,7 @@ export function BoardChain({ board, placedTileEffectId, playableSidesForSelected
         />
         {!ready && (
           <div className="absolute inset-0 grid place-content-center">
+            <BoardIllustration skin={shop.equippedBoard} className="pointer-events-none absolute inset-0 m-auto h-full max-w-[70%] opacity-25" />
             {board.length === 0 ? <span className="text-sm text-gold">Premier domino</span> : tileSize > 0 && (
               <div className="grid" style={{ gridTemplateColumns: `repeat(${columns}, ${tileSize * 2}px)`, gap: `${tileSize * 0.62}px ${tileSize * 0.14}px` }}>
                 {board.map((tile, index) => {
@@ -87,6 +92,7 @@ export function BoardChain({ board, placedTileEffectId, playableSidesForSelected
                       <Domino id={tile.tile.id} topValue={reverse ? tile.right : tile.left}
                         bottomValue={reverse ? tile.left : tile.right} rotationDeg={-90}
                         width={tileSize} state="placed" />
+                      {tile.tile.id === effectTileId && engraving && <PlacementBurst engraving={engraving} />}
                     </div>
                   );
                 })}

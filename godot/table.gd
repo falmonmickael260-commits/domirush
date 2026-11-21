@@ -19,10 +19,12 @@ var pip_color := INK
 var felt_color := FELT
 var accent_color := GOLD
 var engraving: Dictionary = {}
+var board_illustration: Array = []
 var highlighted_id: String = ""
 var received_snapshot := false
 var glow_time := 0.0
-const GLOW_DURATION := 0.58
+const GLOW_DURATION := 0.92
+const IMPACT_DELAY := 0.14
 var bridge: JavaScriptObject
 
 func _ready() -> void:
@@ -49,7 +51,7 @@ func _receive(args: Array) -> void:
 					glow_time = GLOW_DURATION
 					set_process(true)
 					break
-		elif event.data.effects != true or snapshot.is_empty():
+		elif snapshot.size() != tiles.size() or snapshot.is_empty():
 			glow_time = 0.0
 			set_process(false)
 		tiles = snapshot
@@ -64,6 +66,8 @@ func _receive(args: Array) -> void:
 				accent_color = Color.from_string(str(palette.get("accent")), GOLD)
 				var ornament: Variant = palette.get("engraving")
 				engraving = ornament if ornament is Dictionary else {}
+				var illustration: Variant = palette.get("illustration")
+				board_illustration = illustration if illustration is Array else []
 		queue_redraw()
 
 func _process(delta: float) -> void:
@@ -84,11 +88,26 @@ func fit_board(count: int, available: Vector2) -> Vector2:
 			best = Vector2(columns, width)
 	return best
 
+func draw_board_illustration() -> void:
+	if board_illustration.is_empty():
+		return
+	var extent := minf(size.x, size.y)
+	var color := Color(accent_color, 0.34)
+	draw_rect(Rect2(Vector2(5, 5), (size - Vector2(10, 10)).max(Vector2.ZERO)), Color(accent_color, 0.20), false, 1.0)
+	for position: Vector2 in [size / 2.0, size * Vector2(0.15, 0.52), size * Vector2(0.85, 0.52)]:
+		var scale_factor := extent * (0.91 if position.is_equal_approx(size / 2.0) else 0.29) / 100.0
+		for stroke: Array in board_illustration:
+			var path := PackedVector2Array()
+			for point: Array in stroke:
+				path.append(position + (Vector2(float(point[0]), float(point[1])) - Vector2(50, 50)) * scale_factor)
+			draw_polyline(path, color, maxf(1.0, scale_factor * 1.65), true)
+
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), felt_color)
 	for x in range(12, int(size.x), 16):
 		for y in range(12, int(size.y), 16):
 			draw_circle(Vector2(x, y), 0.65, Color(1, 1, 1, 0.10))
+	draw_board_illustration()
 	if tiles.is_empty():
 		var font := ThemeDB.fallback_font
 		var title := "Premier domino"
@@ -117,10 +136,13 @@ func _draw() -> void:
 		var tile_center := center
 		var tile_size := unit
 		if landing:
-			var lift := clampf(1.0 - (GLOW_DURATION - glow_time) / 0.17, 0.0, 1.0)
-			tile_center.y -= minf(unit * 0.16, 7.0) * lift
-			tile_size *= 1.0 + lift * 0.08
-			draw_placement_glow(center, unit)
+			var elapsed := GLOW_DURATION - glow_time
+			var lift := clampf(1.0 - elapsed / IMPACT_DELAY, 0.0, 1.0)
+			var squash := maxf(0.0, 1.0 - absf(elapsed - IMPACT_DELAY - 0.035) / 0.035)
+			tile_center.y -= minf(unit * 0.33, 14.0) * lift * lift
+			tile_size *= 1.0 + lift * 0.16 - squash * 0.06
+			if elapsed >= IMPACT_DELAY:
+				draw_placement_glow(center, unit, (elapsed - IMPACT_DELAY) / (GLOW_DURATION - IMPACT_DELAY))
 		draw_tile(tile_center, tile_size, int(tile[1] if reverse else tile[0]), int(tile[0] if reverse else tile[1]))
 
 func draw_tile(center: Vector2, unit: float, left: int, right: int) -> void:
@@ -139,44 +161,57 @@ func draw_tile(center: Vector2, unit: float, left: int, right: int) -> void:
 	draw_pips(center - Vector2(unit / 2.0, 0), left, unit)
 	draw_pips(center + Vector2(unit / 2.0, 0), right, unit)
 
-func draw_placement_glow(center: Vector2, unit: float) -> void:
-	var intensity := glow_time / GLOW_DURATION
-	var color := Color.from_string(str(engraving.get("color")), accent_color)
-	color.a = intensity * 0.68
-	var glow := StyleBoxFlat.new()
-	glow.draw_center = false
-	glow.border_color = color
-	glow.set_border_width_all(2)
-	glow.set_corner_radius_all(maxi(2, roundi(unit * 0.20)))
-	var margin := 3.0 + (1.0 - intensity) * 9.0
-	var rect := Rect2(center - Vector2(unit, unit / 2.0), Vector2(unit * 2.0, unit))
-	draw_style_box(glow, rect.grow(margin))
-
-	var progress := 1.0 - intensity
-	color.a = intensity * 0.9
+func draw_placement_glow(center: Vector2, unit: float, progress: float) -> void:
+	var color := Color.from_string(str(engraving.get("burstColor", engraving.get("color"))), accent_color)
+	var strength := 1.0 - progress
 	var effect := str(engraving.get("effect"))
-	var spread := Vector2(unit * 0.82, unit * 0.40)
-	for index in 8:
-		var angle := TAU * float(index) / 8.0
-		var direction := Vector2.from_angle(angle + progress * 0.8 if effect == "orbit" else angle)
-		var point := center + direction * (spread + Vector2.ONE * (3.0 + progress * 10.0))
-		var radius := maxf(1.0, minf(3.0, unit * 0.08))
-		match effect:
-			"crystals":
-				var diamond := PackedVector2Array([point + Vector2(0, -radius), point + Vector2(radius, 0),
-					point + Vector2(0, radius), point + Vector2(-radius, 0)])
-				draw_colored_polygon(diamond, color)
-			"orbit":
-				draw_circle(point, radius * (1.0 + intensity * 0.35), color, true, -1.0, true)
-			"wave":
-				if index % 2 == 0:
-					draw_arc(point, radius + progress * 3.0, angle - 0.9, angle + 0.9, 9, color, 1.1, true)
-			_:
-				draw_line(point, point + direction * (radius + intensity * 3.0), color, 1.25, true)
+	var reach := maxf(19.0, unit)
+	draw_circle(center, reach * (0.28 + progress * 0.55), Color(color, strength * strength * 0.23), true, -1.0, true)
+	for index in 2:
+		var wave := progress - float(index) * 0.16
+		if wave < 0:
+			continue
+		var radius := reach * (0.44 + wave * 1.28)
+		draw_set_transform(center, 0.0, Vector2(1.28, 0.66))
+		draw_arc(Vector2.ZERO, radius, 0, TAU, 36, Color(color, strength * (0.8 - index * 0.25)), 1.7, true)
+		draw_set_transform(Vector2.ZERO)
+
+	for index in 14:
+		var angle := TAU * float(index) / 14.0
+		if effect == "orbit" or effect == "petals":
+			angle += progress * 1.45
+		var direction := Vector2.from_angle(angle)
+		var travel := 0.43 + progress * (0.9 + float(index % 3) * 0.33)
+		var point := center + direction * Vector2(1.25, 0.86) * reach * travel
+		if effect == "flame" or effect == "petals":
+			point.y -= progress * reach * 0.7
+		var radius := maxf(2.4, minf(5.0, unit * 0.12)) * (1.0 - progress * 0.45)
+		var particle_color := Color(color.lightened(0.26 if index % 3 == 0 else 0.0), strength)
+		draw_landing_particle(effect, point, direction, radius, particle_color, progress)
+
+func draw_landing_particle(effect: String, point: Vector2, direction: Vector2, radius: float, color: Color, progress: float) -> void:
+	var sideways := direction.orthogonal()
+	match effect:
+		"bolt":
+			draw_polyline(PackedVector2Array([point - direction * 2.0 * radius, point + sideways * radius,
+				point - sideways * radius, point + direction * 2.0 * radius]), color, 2.0, true)
+		"crystals", "petals", "flame":
+			var stretch := 2.1 if effect == "flame" else 1.45
+			var axis := Vector2.UP if effect == "flame" else direction
+			var wing := axis.orthogonal() * radius * (0.7 if effect == "petals" else 0.85)
+			draw_colored_polygon(PackedVector2Array([point + axis * radius * stretch, point + wing,
+				point - axis * radius, point - wing]), color)
+		"stars", "sparks":
+			draw_line(point - direction * radius, point + direction * radius, color, 1.6, true)
+			draw_line(point - sideways * radius, point + sideways * radius, color, 1.6, true)
+		"wave":
+			draw_arc(point, radius + progress * 4.0, direction.angle() - 1.3, direction.angle() + 1.3, 9, color, 1.5, true)
+		_:
+			draw_circle(point, radius, color, false, 1.3, true)
 
 func draw_engraving(center: Vector2, unit: float) -> void:
 	var color := Color.from_string(str(engraving.get("color")), edge_color)
-	color.a = 0.65
+	color.a = 0.76
 	for stroke: Array in engraving.get("strokes", []):
 		var left := PackedVector2Array()
 		var right := PackedVector2Array()
@@ -184,8 +219,8 @@ func draw_engraving(center: Vector2, unit: float) -> void:
 			var offset := Vector2(float(point[1]) - 100.0, 50.0 - float(point[0])) * (unit / 100.0)
 			left.append(center + offset)
 			right.append(center - offset)
-		draw_polyline(left, color, maxf(0.65, unit * 0.02), true)
-		draw_polyline(right, color, maxf(0.65, unit * 0.02), true)
+		draw_polyline(left, color, maxf(0.7, unit * 0.025), true)
+		draw_polyline(right, color, maxf(0.7, unit * 0.025), true)
 
 func draw_pips(center: Vector2, value: int, unit: float) -> void:
 	for pip: Vector2 in PIPS[clampi(value, 0, 6)]:
