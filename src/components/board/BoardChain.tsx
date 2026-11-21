@@ -11,11 +11,12 @@ import { useMeasuredSize } from "@/hooks/useMeasuredSize";
 
 interface BoardChainProps {
   board: PlacedTile[];
+  placedTileEffectId?: string;
   playableSidesForSelected: Side[] | null;
   onPlayAt: (side: Side) => void;
 }
 
-export function BoardChain({ board, playableSidesForSelected, onPlayAt }: BoardChainProps) {
+export function BoardChain({ board, placedTileEffectId, playableSidesForSelected, onPlayAt }: BoardChainProps) {
   const reduceMotion = useReducedMotion();
   const { shop } = useDominoShop();
   const skin = DOMINO_SKINS[shop.equipped];
@@ -44,8 +45,9 @@ export function BoardChain({ board, playableSidesForSelected, onPlayAt }: BoardC
       palette: JSON.stringify({ face: skin.face, engraving, edge: skin.edge, pip: skin.pip, felt: table.felt, accent: table.accent }),
       tiles: JSON.stringify(board.map(({ left, right, tile }) => [left, right, tile.id])),
       effects: reduceMotion === false && Boolean(engraving),
+      effectTileId: placedTileEffectId ?? null,
     }, window.location.origin);
-  }, [board, ready, skin, table, engraving, reduceMotion]);
+  }, [board, ready, skin, table, engraving, reduceMotion, placedTileEffectId]);
 
   // Keep a playable board while the WebAssembly export starts or WebGL is unavailable.
   let columns = 1;

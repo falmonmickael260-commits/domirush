@@ -21,7 +21,7 @@ var accent_color := GOLD
 var engraving: Dictionary = {}
 var highlighted_id: String = ""
 var glow_time := 0.0
-const GLOW_DURATION := 0.38
+const GLOW_DURATION := 0.58
 var bridge: JavaScriptObject
 
 func _ready() -> void:
@@ -43,7 +43,7 @@ func _receive(args: Array) -> void:
 		if event.data.effects == true and snapshot.size() == tiles.size() + 1:
 			var previous_ids: Array = tiles.map(func(tile: Array): return tile[2] if tile.size() > 2 else "")
 			for tile: Array in snapshot:
-				if tile.size() > 2 and not previous_ids.has(tile[2]):
+				if tile.size() > 2 and tile[2] == event.data.effectTileId and not previous_ids.has(tile[2]):
 					highlighted_id = str(tile[2])
 					glow_time = GLOW_DURATION
 					set_process(true)
@@ -143,6 +143,28 @@ func draw_placement_glow(center: Vector2, unit: float) -> void:
 	var margin := 2.0 + (1.0 - intensity) * 2.0
 	var rect := Rect2(center - Vector2(unit, unit / 2.0), Vector2(unit * 2.0, unit))
 	draw_style_box(glow, rect.grow(margin))
+
+	var progress := 1.0 - intensity
+	color.a = intensity * 0.9
+	var effect := str(engraving.get("effect"))
+	var spread := Vector2(unit * 0.82, unit * 0.40)
+	for index in 8:
+		var angle := TAU * float(index) / 8.0
+		var direction := Vector2.from_angle(angle + progress * 0.8 if effect == "orbit" else angle)
+		var point := center + direction * (spread + Vector2.ONE * (3.0 + progress * 10.0))
+		var radius := maxf(1.0, minf(3.0, unit * 0.08))
+		match effect:
+			"crystals":
+				var diamond := PackedVector2Array([point + Vector2(0, -radius), point + Vector2(radius, 0),
+					point + Vector2(0, radius), point + Vector2(-radius, 0)])
+				draw_colored_polygon(diamond, color)
+			"orbit":
+				draw_circle(point, radius * (1.0 + intensity * 0.35), color, true, -1.0, true)
+			"wave":
+				if index % 2 == 0:
+					draw_arc(point, radius + progress * 3.0, angle - 0.9, angle + 0.9, 9, color, 1.1, true)
+			_:
+				draw_line(point, point + direction * (radius + intensity * 3.0), color, 1.25, true)
 
 func draw_engraving(center: Vector2, unit: float) -> void:
 	var color := Color.from_string(str(engraving.get("color")), edge_color)

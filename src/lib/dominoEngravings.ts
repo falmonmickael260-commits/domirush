@@ -3,11 +3,12 @@ import type { DominoSkin } from "./dominoSkins";
 // Engravings use a 100 × 100 square, mirrored onto the other half.
 // The game board and the shop draw the same strokes beneath the pips.
 type Stroke = readonly (readonly [number, number])[];
-type Engraving = { color: string; strokes: readonly Stroke[] };
+type Engraving = { color: string; effect: "sparks" | "crystals" | "orbit" | "wave"; strokes: readonly Stroke[] };
 
 export const DOMINO_ENGRAVINGS: Partial<Record<DominoSkin, Engraving>> = {
   obsidian: {
     color: "#f5bc58",
+    effect: "sparks",
     strokes: [
       [[8, 32], [8, 22], [22, 8], [78, 8], [92, 22], [92, 32]],
       [[13, 26], [27, 14], [41, 14]], [[59, 14], [73, 14], [87, 26]],
@@ -16,6 +17,7 @@ export const DOMINO_ENGRAVINGS: Partial<Record<DominoSkin, Engraving>> = {
   },
   jade: {
     color: "#c7eaa0",
+    effect: "wave",
     strokes: [
       [[7, 24], [24, 7], [36, 19], [24, 31], [15, 22], [24, 13], [29, 18]],
       [[93, 24], [76, 7], [64, 19], [76, 31], [85, 22], [76, 13], [71, 18]],
@@ -25,6 +27,7 @@ export const DOMINO_ENGRAVINGS: Partial<Record<DominoSkin, Engraving>> = {
   },
   glacier: {
     color: "#2e87ac",
+    effect: "crystals",
     strokes: [
       [[12, 13], [30, 24], [41, 11], [60, 18], [74, 10], [88, 15]],
       [[30, 24], [22, 36], [9, 42]], [[60, 18], [67, 29], [88, 29], [93, 43]],
@@ -33,6 +36,7 @@ export const DOMINO_ENGRAVINGS: Partial<Record<DominoSkin, Engraving>> = {
   },
   ruby: {
     color: "#ffbcb5",
+    effect: "crystals",
     strokes: [
       [[8, 44], [8, 22], [22, 8], [78, 8], [92, 22], [92, 44]],
       [[18, 14], [27, 24], [50, 21], [73, 24], [82, 14]], [[28, 8], [50, 21], [72, 8]],
@@ -41,6 +45,7 @@ export const DOMINO_ENGRAVINGS: Partial<Record<DominoSkin, Engraving>> = {
   },
   nebula: {
     color: "#94eaff",
+    effect: "orbit",
     strokes: [
       [[10, 26], [32, 11], [60, 17], [90, 11]], [[60, 11], [60, 23]], [[54, 17], [66, 17]],
       [[11, 53], [11, 66]], [[7, 59], [15, 59]], [[86, 72], [86, 87]], [[80, 79], [92, 79]],
@@ -49,6 +54,7 @@ export const DOMINO_ENGRAVINGS: Partial<Record<DominoSkin, Engraving>> = {
   },
   porcelain: {
     color: "#3458a2",
+    effect: "wave",
     strokes: [
       [[9, 43], [13, 24], [22, 14], [36, 10], [43, 15], [35, 23], [25, 25], [21, 33], [27, 38]],
       [[91, 43], [87, 24], [78, 14], [64, 10], [57, 15], [65, 23], [75, 25], [79, 33], [73, 38]],
@@ -57,6 +63,7 @@ export const DOMINO_ENGRAVINGS: Partial<Record<DominoSkin, Engraving>> = {
   },
   copper: {
     color: "#ffc18a",
+    effect: "sparks",
     strokes: [
       [[8, 34], [8, 22], [22, 8], [78, 8], [92, 22], [92, 34]],
       [[10, 26], [24, 12]], [[17, 29], [34, 12]], [[24, 29], [41, 12]], [[72, 12], [89, 29]],
@@ -65,6 +72,7 @@ export const DOMINO_ENGRAVINGS: Partial<Record<DominoSkin, Engraving>> = {
   },
   aurora: {
     color: "#4056a3",
+    effect: "orbit",
     strokes: [
       [[8, 25], [22, 12], [38, 10], [61, 19], [78, 16], [90, 8]],
       [[8, 35], [23, 22], [39, 20], [60, 27], [78, 24], [91, 17]],

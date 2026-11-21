@@ -13,6 +13,7 @@ export interface GameTableProps {
   handCounts: Record<string, number>;
   scores: Record<string, number>;
   board: PlacedTile[];
+  placedTileEffectId?: string;
   playableSidesForSelected: Side[] | null;
   onPlayAt: (side: Side) => void;
 }
@@ -23,6 +24,7 @@ export function GameTable({
   handCounts,
   scores,
   board,
+  placedTileEffectId,
   playableSidesForSelected,
   onPlayAt,
 }: GameTableProps) {
@@ -71,6 +73,7 @@ export function GameTable({
           <div className="h-full w-full">
             <BoardChain
               board={board}
+              placedTileEffectId={placedTileEffectId}
               playableSidesForSelected={playableSidesForSelected}
               onPlayAt={onPlayAt}
             />
