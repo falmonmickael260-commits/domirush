@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlacedTile, Side } from "@/game-engine";
 import { Domino } from "@/components/domino/Domino";
+import { DOMINO_SKINS } from "@/lib/dominoSkins";
+import { useDominoShop } from "@/components/DominoSkinProvider";
 import { useMeasuredSize } from "@/hooks/useMeasuredSize";
 
 interface BoardChainProps {
@@ -12,6 +14,8 @@ interface BoardChainProps {
 }
 
 export function BoardChain({ board, playableSidesForSelected, onPlayAt }: BoardChainProps) {
+  const { shop } = useDominoShop();
+  const skin = DOMINO_SKINS[shop.equipped];
   const frame = useRef<HTMLIFrameElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const { width, height } = useMeasuredSize(viewport);
@@ -32,9 +36,10 @@ export function BoardChain({ board, playableSidesForSelected, onPlayAt }: BoardC
     if (!ready) return;
     frame.current?.contentWindow?.postMessage({
       type: "domirush:board",
+      palette: JSON.stringify({ face: skin.face, edge: skin.edge, pip: skin.pip }),
       tiles: JSON.stringify(board.map(({ left, right }) => [left, right])),
     }, window.location.origin);
-  }, [board, ready]);
+  }, [board, ready, skin]);
 
   // Keep a playable board while the WebAssembly export starts or WebGL is unavailable.
   let columns = 1;

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import { DominoSkinProvider } from "@/components/DominoSkinProvider";
 import { PlatformBridge } from "@/components/PlatformBridge";
 
 const outfit = Outfit({
@@ -25,7 +26,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="fr" className={`${outfit.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-bg text-text"><PlatformBridge origin={process.env.PLATFORM_SHELL_ORIGIN ?? "https://revanchegames-production.up.railway.app"} />{children}</body>
+      <body className="min-h-full flex flex-col bg-bg text-text"><PlatformBridge origin={process.env.PLATFORM_SHELL_ORIGIN ?? "https://revanchegames-production.up.railway.app"} /><DominoSkinProvider>{children}</DominoSkinProvider></body>
     </html>
   );
 }

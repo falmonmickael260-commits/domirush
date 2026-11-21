@@ -13,6 +13,9 @@ const PIPS := [
 ]
 
 var tiles: Array = []
+var face_color := IVORY
+var edge_color := GOLD
+var pip_color := INK
 var bridge: JavaScriptObject
 
 func _ready() -> void:
@@ -31,6 +34,12 @@ func _receive(args: Array) -> void:
 	var snapshot: Variant = JSON.parse_string(event.data.tiles)
 	if snapshot is Array:
 		tiles = snapshot
+		if event.data.palette is String:
+			var palette: Variant = JSON.parse_string(event.data.palette)
+			if palette is Dictionary:
+				face_color = Color.from_string(str(palette.get("face")), IVORY)
+				edge_color = Color.from_string(str(palette.get("edge")), GOLD)
+				pip_color = Color.from_string(str(palette.get("pip")), INK)
 		queue_redraw()
 
 # Evaluate each row capacity against both viewport dimensions. A long chain
@@ -78,18 +87,18 @@ func _draw() -> void:
 
 func draw_tile(center: Vector2, unit: float, left: int, right: int) -> void:
 	var face := StyleBoxFlat.new()
-	face.bg_color = IVORY
-	face.border_color = GOLD
+	face.bg_color = face_color
+	face.border_color = edge_color
 	face.set_border_width_all(1)
 	face.set_corner_radius_all(maxi(2, roundi(unit * 0.16)))
 	face.shadow_color = Color(0, 0, 0, 0.42)
 	face.shadow_size = 3
 	face.shadow_offset = Vector2(0, 2)
 	draw_style_box(face, Rect2(center - Vector2(unit, unit / 2.0), Vector2(unit * 2.0, unit)))
-	draw_line(center - Vector2(0, unit * 0.32), center + Vector2(0, unit * 0.32), INK, 1.0, true)
+	draw_line(center - Vector2(0, unit * 0.32), center + Vector2(0, unit * 0.32), pip_color, 1.0, true)
 	draw_pips(center - Vector2(unit / 2.0, 0), left, unit)
 	draw_pips(center + Vector2(unit / 2.0, 0), right, unit)
 
 func draw_pips(center: Vector2, value: int, unit: float) -> void:
 	for pip: Vector2 in PIPS[clampi(value, 0, 6)]:
-		draw_circle(center + (pip - Vector2.ONE) * unit * 0.23, unit * 0.074, INK, true, -1, true)
+		draw_circle(center + (pip - Vector2.ONE) * unit * 0.23, unit * 0.074, pip_color, true, -1, true)

@@ -20,7 +20,7 @@ function signature(domain: string, stamp: string, raw: string, secret: string) {
   return createHmac("sha256", secret).update(`${domain}.${stamp}.${raw}`).digest();
 }
 
-async function callPlatform(purpose: "identity" | "result", data: unknown) {
+export async function callPlatform(purpose: "identity" | "result" | "shop", data: unknown) {
   const secret = key();
   const base = origin();
   if (!secret || !base) return null;

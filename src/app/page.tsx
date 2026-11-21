@@ -50,6 +50,8 @@ export default function Home() {
           </Link>
         </motion.div>
 
+        <Link href="/boutique" className="mt-5 rounded-xl border border-gold/35 px-5 py-2.5 text-sm font-bold text-gold">Boutique</Link>
+
         <p className="mt-8 text-xs text-text-faint">Joue avec ta famille et tes amis.</p>
 
         <Link href="/regles" className="mt-4 text-xs font-medium text-text-dim underline underline-offset-4">
