@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlacedTile, Side } from "@/game-engine";
 import { Domino } from "@/components/domino/Domino";
-import { DOMINO_SKINS } from "@/lib/dominoSkins";
+import { BOARD_SKINS, DOMINO_SKINS } from "@/lib/dominoSkins";
 import { useDominoShop } from "@/components/DominoSkinProvider";
 import { useMeasuredSize } from "@/hooks/useMeasuredSize";
 
@@ -16,6 +16,7 @@ interface BoardChainProps {
 export function BoardChain({ board, playableSidesForSelected, onPlayAt }: BoardChainProps) {
   const { shop } = useDominoShop();
   const skin = DOMINO_SKINS[shop.equipped];
+  const table = BOARD_SKINS[shop.equippedBoard];
   const frame = useRef<HTMLIFrameElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const { width, height } = useMeasuredSize(viewport);
@@ -36,10 +37,10 @@ export function BoardChain({ board, playableSidesForSelected, onPlayAt }: BoardC
     if (!ready) return;
     frame.current?.contentWindow?.postMessage({
       type: "domirush:board",
-      palette: JSON.stringify({ face: skin.face, edge: skin.edge, pip: skin.pip }),
+      palette: JSON.stringify({ face: skin.face, edge: skin.edge, pip: skin.pip, felt: table.felt, accent: table.accent }),
       tiles: JSON.stringify(board.map(({ left, right }) => [left, right])),
     }, window.location.origin);
-  }, [board, ready, skin]);
+  }, [board, ready, skin, table]);
 
   // Keep a playable board while the WebAssembly export starts or WebGL is unavailable.
   let columns = 1;
@@ -58,7 +59,7 @@ export function BoardChain({ board, playableSidesForSelected, onPlayAt }: BoardC
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
-      <div ref={viewport} data-board-viewport className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-gold/20 bg-[#102f27]">
+      <div ref={viewport} data-board-viewport className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-gold/20" style={{ backgroundColor: table.felt }}>
         <iframe ref={frame} src="/godot/index.html" title="Plateau Domirush"
           tabIndex={-1} aria-hidden="true"
           className={`pointer-events-none absolute inset-0 size-full border-0 ${ready ? "" : "invisible"}`}

@@ -16,6 +16,8 @@ var tiles: Array = []
 var face_color := IVORY
 var edge_color := GOLD
 var pip_color := INK
+var felt_color := FELT
+var accent_color := GOLD
 var bridge: JavaScriptObject
 
 func _ready() -> void:
@@ -40,6 +42,8 @@ func _receive(args: Array) -> void:
 				face_color = Color.from_string(str(palette.get("face")), IVORY)
 				edge_color = Color.from_string(str(palette.get("edge")), GOLD)
 				pip_color = Color.from_string(str(palette.get("pip")), INK)
+				felt_color = Color.from_string(str(palette.get("felt")), FELT)
+				accent_color = Color.from_string(str(palette.get("accent")), GOLD)
 		queue_redraw()
 
 # Evaluate each row capacity against both viewport dimensions. A long chain
@@ -55,7 +59,7 @@ func fit_board(count: int, available: Vector2) -> Vector2:
 	return best
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), FELT)
+	draw_rect(Rect2(Vector2.ZERO, size), felt_color)
 	for x in range(12, int(size.x), 16):
 		for y in range(12, int(size.y), 16):
 			draw_circle(Vector2(x, y), 0.65, Color(1, 1, 1, 0.10))
@@ -63,7 +67,7 @@ func _draw() -> void:
 		var font := ThemeDB.fallback_font
 		var title := "Premier domino"
 		var origin := size / 2.0 - Vector2(font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x / 2.0, -5)
-		draw_string(font, origin, title, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, GOLD)
+		draw_string(font, origin, title, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, accent_color)
 		return
 
 	var fit := fit_board(tiles.size(), (size - Vector2(20, 18)).max(Vector2.ONE))
@@ -81,7 +85,7 @@ func _draw() -> void:
 			var outside := Vector2((-1.38 if reverse == false else 1.38) * unit, 0)
 			var edge := center + Vector2(signf(outside.x) * unit, 0)
 			var previous := edge - Vector2(0, step.y)
-			draw_polyline(PackedVector2Array([previous, center - Vector2(0, step.y) + outside, center + outside, edge]), GOLD, 1.5, true)
+			draw_polyline(PackedVector2Array([previous, center - Vector2(0, step.y) + outside, center + outside, edge]), accent_color, 1.5, true)
 		var tile: Array = tiles[index]
 		draw_tile(center, unit, int(tile[1] if reverse else tile[0]), int(tile[0] if reverse else tile[1]))
 

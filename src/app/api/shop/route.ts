@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { isDominoSkin } from "@/lib/dominoSkins";
+import { isSkinId } from "@/lib/dominoSkins";
 import { callPlatform } from "@/server/platform";
 
 const requestSchema = z.object({
   action: z.enum(["catalog", "buy", "equip"]),
   token: z.string().max(4096).optional(),
   expectedPrice: z.int().positive().max(2147483647).optional(),
-  item: z.custom<string>(isDominoSkin).optional(),
+  item: z.custom<string>(isSkinId).optional(),
 });
 
 export async function POST(request: Request) {

@@ -2,6 +2,8 @@
 
 import type { PlacedTile, Side } from "@/game-engine";
 import type { SeatPosition } from "@/lib/viewModel";
+import { useDominoShop } from "@/components/DominoSkinProvider";
+import { BOARD_SKINS } from "@/lib/dominoSkins";
 import { PlayerSeat } from "./PlayerSeat";
 import { BoardChain } from "./BoardChain";
 
@@ -24,12 +26,15 @@ export function GameTable({
   playableSidesForSelected,
   onPlayAt,
 }: GameTableProps) {
+  const { shop } = useDominoShop();
+  const table = BOARD_SKINS[shop.equippedBoard];
+
   return (
     <div
       className="relative mx-auto aspect-[4/5] max-h-full w-full max-w-lg rounded-[28px] p-3 sm:aspect-[16/9] sm:max-w-6xl sm:p-6"
       style={{
         background:
-          "radial-gradient(120% 140% at 50% 0%, #365b4c 0%, #1b392e 45%, #10261e 100%)",
+          `radial-gradient(120% 140% at 50% 0%, ${table.rail} 0%, ${table.felt} 75%)`,
         boxShadow:
           "inset 0 2px 6px rgba(255,255,255,0.12), inset 0 -10px 24px rgba(0,0,0,0.45), 0 20px 40px -12px rgba(0,0,0,0.6)",
       }}
@@ -45,9 +50,9 @@ export function GameTable({
       <div
         className="relative h-full w-full rounded-[20px] border-2"
         style={{
-          borderColor: "var(--color-wood-rail)",
+          borderColor: table.border,
           background:
-            "radial-gradient(80% 90% at 50% 50%, var(--color-felt) 0%, #0f1712 100%)",
+            `radial-gradient(80% 90% at 50% 35%, ${table.felt} 30%, ${table.rail} 160%)`,
           boxShadow: "inset 0 6px 18px rgba(0,0,0,0.55)",
         }}
       >
